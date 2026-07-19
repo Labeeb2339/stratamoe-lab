@@ -19,7 +19,7 @@ Every policy moves the requested expert weights; none may replace, skip, reroute
 | This repository does | This repository does not do |
 | --- | --- |
 | Generate deterministic steady-locality, abrupt-shift, and high-churn traces | Load or execute an MoE checkpoint |
-| Import and export router traces as JSON | Measure a physical GPU, PCIe bus, RAM subsystem, or SSD |
+| Import and export provenance-bearing router traces as JSON | Measure a physical GPU, PCIe bus, RAM subsystem, or SSD |
 | Model GPU/RAM/NVMe residency and transfers | Run CUDA kernels, DMA, decompression, or quantized matrix multiplication |
 | Compare policies on identical routing decisions | Establish model-quality preservation on generated text |
 | Report exact simulator counters and bandwidth-derived estimates | Claim a real tokens-per-second speedup or a new state of the art |
@@ -28,7 +28,7 @@ The honest result format is: **“On trace T under configuration C, policy A red
 
 ## Fixed regression benchmark
 
-`npm run benchmark` currently reproduces the synthetic `domain-shift` trace with seed `2339` and fingerprint `e5f913fa` (`240` tokens, `8` layers, `16` experts per layer, top-`2`, `32` GPU slots, `64` RAM slots, `64` MB experts, `24` GB/s PCIe, and `7` GB/s NVMe).
+`npm run benchmark` currently reproduces the synthetic `domain-shift` RouterTrace v2 with seed `2339` and provenance-bearing fingerprint `d860285d` (`240` tokens, `8` layers, `16` experts per layer, top-`2`, `32` GPU slots, `64` RAM slots, `64` MB experts, `24` GB/s PCIe, and `7` GB/s NVMe).
 
 | Policy | Total modeled link bytes / token | Modeled transfer stall / token | Estimated throughput |
 | --- | ---: | ---: | ---: |
@@ -62,6 +62,8 @@ npm run benchmark
 
 The dashboard lets you choose a scenario, seed, token count, model shape, cache capacity, expert size, and modeled bandwidths; run all policies; inspect per-token behavior and final tier residency; and export or import deterministic router traces.
 
+RouterTrace v2 records `source.kind` as either `synthetic` or `captured`. Captured traces must pin immutable model and tokenizer revisions, software versions, capture settings, and either ordered dataset example IDs or the SHA-256 of an external prompt manifest. Provenance is included in the trace fingerprint. Legacy v1 files still import, but are conservatively marked as synthetic because they contain no evidence of how their selections were obtained. See the [RouterTrace v2 schema](docs/ROUTER_TRACE_SCHEMA.md).
+
 ## Reproducible comparison checklist
 
 When reporting a result, include:
@@ -81,11 +83,15 @@ When reporting a result, include:
 - [Limitations](docs/LIMITATIONS.md) — what the simulator cannot support as a claim
 - [Two-minute outreach demo](docs/OUTREACH_DEMO.md) — an honest walkthrough and ask for the 2026-07-21 call
 
+[RouterTrace v2 schema](docs/ROUTER_TRACE_SCHEMA.md) documents synthetic/captured provenance, validation, privacy, and v1 migration.
+
 ## Research roadmap
 
 1. **Trace harness:** deterministic synthetic traces, inspection UI, fixed regression benchmark, and honest modeled metrics.
 2. **Real-trace replay:** collect router IDs from multiple open MoE families and compare stronger activation-aware baselines.
 3. **Runtime validation:** integrate a frozen policy into one open runtime and measure actual traffic, TTFT, TPOT, and energy on named hardware.
 4. **Precision study:** only after the placement result is understood, test variable precision with expert-balanced calibration and per-expert quality evidence informed by [MoEQuant](https://proceedings.mlr.press/v267/chen25aa.html), [MxMoE](https://proceedings.mlr.press/v267/duanmu25a.html), and [HOBBIT](https://arxiv.org/abs/2411.01433).
+
+The source code is licensed under the [Apache License 2.0](LICENSE).
 
 StrataMoE Lab is independent educational research. It is not affiliated with Colibrì, AirLLM, the cited authors, their universities, or their organisations.
