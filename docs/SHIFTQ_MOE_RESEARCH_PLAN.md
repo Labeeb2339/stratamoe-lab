@@ -31,10 +31,11 @@ vector representation.
 ## Why the current captured result matters
 
 StrataMoE's first pinned Switch-Base-8 trace is a failure case for the current
-combined ShiftCache policy. ShiftCache moved 44.67% more modeled bytes than LFU
-because 258 of 366 prefetches were unused. That result prevents a weak story in
-which JSD scoring is assumed to help merely because it wins on one synthetic
-fixture.
+combined ShiftCache policy. ShiftCache moved 44.67% more modeled bytes than LFU,
+and 258 of 366 issued prefetches were unused. The no-prefetch ablation identified
+substantial prefetch pollution, although the remaining policy still lost to
+LFU. That result prevents a weak story in which JSD scoring is assumed to help
+merely because it wins on one synthetic fixture.
 
 Before any precision work, the captured-trace harness needed to separate:
 
@@ -45,8 +46,9 @@ Before any precision work, the captured-trace harness needed to separate:
 That first mechanism matrix is now complete. It found prefetch pollution and a
 negative JSD-score result on this trace; it did not validate change detection.
 
-ShiftQ-MoE should initially disable transition prefetching. Precision migration
-must have its own explicit byte budget and hysteresis.
+Any separate future precision study should initially disable transition
+prefetching. Precision migration must have its own explicit byte budget and
+hysteresis.
 
 ## Closest prior work and the remaining candidate gap
 
@@ -56,9 +58,9 @@ must have its own explicit byte budget and hysteresis.
 | [DyMoE](https://arxiv.org/abs/2603.19172) (Sun Yat-sen University and Tencent authors) | Dynamic importance, mixed precision, look-ahead prefetching, and edge inference | Cross-request change detection plus an expert-specific damage table may be separable |
 | [HOBBIT](https://arxiv.org/abs/2411.01433) (Shanghai Jiao Tong University and CUHK authors) | Token-level mixed-precision loading, adaptive prefetching, and multidimensional caching | No explicit sequential workload change-point experiment is claimed here |
 | [MxMoE](https://arxiv.org/abs/2505.05799) | Calibration perturbation, activation frequency, hardware cost, and mixed-precision allocation | Strong static baseline rather than an online shift-triggered policy |
-| [FRI-MxMoE](https://aclanthology.org/2026.acl-long.982/) (Xiamen University authors) | Fast quantization-error and runtime prediction followed by mixed-precision allocation | Static calibration rather than online sequential adaptation |
+| [FRI-MxMoE](https://aclanthology.org/2026.acl-long.982/) (ACL 2026) | Fast quantization-error and runtime prediction followed by mixed-precision allocation | Static calibration rather than online sequential adaptation |
 | [MoPEQ](https://arxiv.org/abs/2509.02512) | Per-expert Hessian sensitivity combined with activation frequency | Already rules out novelty based only on sensitivity times frequency; remains a static baseline |
-| [HCRMap](https://arxiv.org/abs/2607.11586) (Nanjing University authors) | Hotness drift, multi-tier residency, migration cost, and hysteresis | A serious novelty threat to generic migration-aware scheduling; the possible distinction is measured bit-level quality damage |
+| [HCRMap](https://arxiv.org/abs/2607.11586) (Yongqin Zhang, Nanjing Vocational College of Information Technology; arXiv v1 preprint) | Pressure-aware hot-expert replica residency across stacked SRAM, local HBM, and shared DRAM, accounting for migration overhead, runtime pressure, minimum residency, and hysteresis | A serious novelty threat to generic multi-tier migration-aware scheduling; it does not evaluate bit-level quantization damage |
 | [KBVQ-MoE](https://arxiv.org/abs/2602.11184) | A genuine shared/expert vector quantizer with bias correction | Shows why creating a competitive new numerical quantizer is outside the first experiment's scope |
 
 The possible gap is only the intersection of all four items:
@@ -69,7 +71,8 @@ The possible gap is only the intersection of all four items:
 4. controlled evaluation on real router traces.
 
 This gap is provisional. Literature must be searched again immediately before
-any public novelty statement, especially because HCRMap appeared in July 2026.
+any public novelty statement, especially because HCRMap v1 was submitted on 13
+July 2026.
 
 ## Proposed method
 
@@ -209,9 +212,10 @@ model run.
 
 ## Strict go/no-go gates
 
-### Detector gate
+### Detector gate for any materially different future design
 
-Proceed only if real OLMoE traces satisfy every item:
+Proceed only if a materially different detector is preregistered on fresh data
+and real OLMoE traces satisfy every item:
 
 - at least two of three preregistered domain transitions exceed the stationary
   99th-percentile JSD threshold;
@@ -236,7 +240,7 @@ preregistered schedules, ShiftQ-MoE must:
 Failure means it remains an engineering experiment, not a new research method.
 A synthetic StrataMoE result alone can never pass this gate.
 
-## Immediate next experiment
+## Completed go/no-go experiment and decision
 
 Do not implement mixed precision yet. The pinned Switch-Base-8 mechanism matrix
 is now complete with prefetch disabled:
@@ -295,3 +299,58 @@ The strongest honest title for the completed placement experiment is:
 
 > **When Change Detection Is Not Enough: A Negative Control for JSD-Gated MoE
 > Expert Placement**
+
+## Candidate continuation: shift actionability study
+
+This is a proposal, not a result and not yet a new benchmark. The next question
+is narrower than designing another detector:
+
+> When does a correctly detected routing shift create enough placement headroom
+> to repay cache churn and migration cost?
+
+That question must be tested against the legitimate **do nothing** decision.
+Generic caching with switching costs, workload-aware MoE caching, and dynamic
+expert promotion already exist, so change detection or migration awareness alone
+cannot support a novelty claim.
+
+### Preregistered comparison matrix
+
+Use fresh held-out causal-MoE router traces with stationary, abrupt `A -> B`,
+reversal `A -> B -> A`, gradual, and high-churn schedules. Cross each detector
+with each action so detector quality is not confused with policy quality:
+
+- no detector and no action;
+- a perfect boundary oracle used only as an upper-bound diagnostic;
+- a persistent distribution-shift detector; and
+- the frozen current detector, without retuning its published seeds;
+
+against:
+
+- no action;
+- the frozen failed ShiftCache action;
+- a simple LFU/LRU refresh baseline;
+- a shadow-gated action that acts only when estimated reuse savings exceed its
+  movement cost; and
+- a clairvoyant action oracle used only to measure available headroom.
+
+Report detector delay and false-trigger rate separately from false-action rate,
+modeled demand-transfer bytes, migration bytes, time-to-benefit, and regret
+against the action oracle. Any later latency claim requires a real implementation
+and named hardware.
+
+### Provisional evidence gates
+
+Before describing the work as a benchmark contribution, require at least two
+causal-MoE model families, three preregistered non-stationary schedules,
+immutable trace and configuration hashes, faithful strong baselines, and a
+clean-environment reproduction. A candidate action should also:
+
+- regress by no more than 2% on the worst held-out trace versus the strongest
+  non-adaptive baseline;
+- improve median modeled traffic by at least 5% only where the action oracle
+  shows at least 10% available headroom;
+- have a paired 95% confidence interval excluding zero; and
+- preserve semantic routing exactly.
+
+Until those gates pass, the defensible description is **a preregistered
+actionability experiment**, not a new method or a breakthrough.
