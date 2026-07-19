@@ -48,10 +48,18 @@ StrataMoE Lab instead contributes a small, reproducible surface for isolating on
 
 Requires Node.js `>=22.13.0`.
 
+No model weights, GPU, API key, or external dataset are required. The included
+simulator and deterministic traces run locally.
+
 ```bash
+git clone https://github.com/Labeeb2339/stratamoe-lab.git
+cd stratamoe-lab
 npm ci
 npm run dev
 ```
+
+Open [http://localhost:3000](http://localhost:3000) to use the dashboard. Stop
+the development server with `Ctrl+C` when finished.
 
 Quality and experiment commands are declared in `package.json`:
 
