@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  DEFAULT_SIMULATION_CONTROLS,
   POLICY_IDS,
   fingerprintRouterTrace,
   importRouterTrace,
@@ -29,6 +30,10 @@ const comparisonUrl = new URL(
 );
 const prefetchAblationUrl = new URL(
   "../evidence/switch-base-8/prefetch-ablation.json",
+  import.meta.url,
+);
+const retentionAblationUrl = new URL(
+  "../evidence/switch-base-8/retention-ablation.json",
   import.meta.url,
 );
 
@@ -147,6 +152,7 @@ test("prefetch-disabled ShiftCache isolates speculative transfers", () => {
 
   const prefetchOn = runSimulation(config, trace);
   const prefetchOff = runSimulation(config, trace, {
+    ...DEFAULT_SIMULATION_CONTROLS,
     shiftCachePrefetch: false,
   });
 
@@ -171,7 +177,11 @@ test("checked-in prefetch ablation preserves the captured result", () => {
     config: ComparisonConfig;
     variants: Array<{
       id: string;
-      controls: { shiftCachePrefetch: boolean };
+      controls: {
+        shiftCachePrefetch: boolean;
+        shiftCacheJsdReweighting: boolean;
+        shiftCacheTransitionRetention: boolean;
+      };
       metrics: SimulationMetrics;
     }>;
     effectOfDisablingPrefetch: {
@@ -200,7 +210,10 @@ test("checked-in prefetch ablation preserves the captured result", () => {
   );
   assert.deepEqual(
     variants["prefetch-off"].metrics,
-    runSimulation(replayConfig, trace, { shiftCachePrefetch: false }).metrics,
+    runSimulation(replayConfig, trace, {
+      ...DEFAULT_SIMULATION_CONTROLS,
+      shiftCachePrefetch: false,
+    }).metrics,
   );
   assert.equal(variants["prefetch-on"].controls.shiftCachePrefetch, true);
   assert.equal(variants["prefetch-off"].controls.shiftCachePrefetch, false);
@@ -216,4 +229,100 @@ test("checked-in prefetch ablation preserves the captured result", () => {
     0,
   );
   assert.equal(ablation.effectOfDisablingPrefetch.bytesPerToken.percentChange, -20.44930876);
+});
+
+test("checked-in retention ablation isolates the two scoring factors", () => {
+  const ablation = JSON.parse(readFileSync(retentionAblationUrl, "utf8")) as {
+    evidenceBoundary: string;
+    terminology: string;
+    traceSha256: string;
+    traceFingerprint: string;
+    config: ComparisonConfig;
+    semanticGroupBoundaries: Array<{ token: number; group: string }>;
+    variants: Array<{
+      id: string;
+      controls: {
+        shiftCachePrefetch: boolean;
+        shiftCacheJsdReweighting: boolean;
+        shiftCacheTransitionRetention: boolean;
+      };
+      detectedShiftEvents: Array<{ token: number; scoreBits: number }>;
+      metrics: SimulationMetrics;
+      postBoundary: {
+        aggregate: { modeledLinkBytesPerToken: number };
+      };
+      versusFixedFrequencyRecency: {
+        wholeRunModeledLinkBytesPercentChange: number;
+        postBoundaryModeledLinkBytesPercentChange: number;
+      };
+      versusLfu: {
+        wholeRunModeledLinkBytesPercentChange: number;
+        postBoundaryModeledLinkBytesPercentChange: number;
+      };
+    }>;
+    lfuReference: { metrics: SimulationMetrics };
+    bestVariantByWholeRunModeledLinkBytes: string;
+    bestVariantByPostBoundaryModeledLinkBytes: string;
+  };
+
+  assert.match(ablation.evidenceBoundary, /remain simulated/i);
+  assert.match(ablation.terminology, /continuously changes eviction weights/i);
+  assert.equal(
+    ablation.traceSha256,
+    createHash("sha256").update(readFileSync(traceUrl)).digest("hex"),
+  );
+  assert.equal(ablation.traceFingerprint, "f3b18fe2");
+  assert.deepEqual(ablation.semanticGroupBoundaries, [
+    { token: 64, group: "electronics" },
+    { token: 127, group: "science" },
+    { token: 167, group: "software" },
+  ]);
+
+  const trace = importRouterTrace(readFileSync(traceUrl, "utf8"));
+  const replayConfig = { ...ablation.config, policy: "shift-cache" } as const;
+  const variants = Object.fromEntries(
+    ablation.variants.map((variant) => [variant.id, variant]),
+  );
+  assert.deepEqual(Object.keys(variants), [
+    "fixed-frequency-recency",
+    "jsd-only",
+    "transition-only",
+    "jsd-and-transition",
+  ]);
+
+  for (const variant of ablation.variants) {
+    const replay = runSimulation(replayConfig, trace, variant.controls);
+    assert.deepEqual(variant.metrics, replay.metrics);
+    assert.deepEqual(
+      variant.detectedShiftEvents.map((event) => event.token),
+      [23, 59, 140],
+    );
+    assert.equal(variant.controls.shiftCachePrefetch, false);
+    assert.equal(variant.metrics.prefetchesIssued, 0);
+    assert.equal(variant.metrics.prefetchBytesTransferred, 0);
+    assert.equal(variant.metrics.semanticRoutingChanges, 0);
+    assert.deepEqual(replay.trace.selections, trace.selections);
+  }
+
+  assert.equal(variants["fixed-frequency-recency"].metrics.bytesPerToken, 400372093.02);
+  assert.equal(variants["jsd-only"].metrics.bytesPerToken, 417637209.3);
+  assert.equal(variants["transition-only"].metrics.bytesPerToken, 398288372.09);
+  assert.equal(variants["jsd-and-transition"].metrics.bytesPerToken, 411088372.09);
+  assert.equal(
+    variants["jsd-only"].versusFixedFrequencyRecency
+      .wholeRunModeledLinkBytesPercentChange,
+    4.31226766,
+  );
+  assert.equal(
+    variants["transition-only"].versusFixedFrequencyRecency
+      .postBoundaryModeledLinkBytesPercentChange,
+    -1.33111481,
+  );
+  assert.equal(ablation.lfuReference.metrics.bytesPerToken, 357209302.33);
+  assert.ok(
+    variants["transition-only"].metrics.bytesPerToken >
+      ablation.lfuReference.metrics.bytesPerToken,
+  );
+  assert.equal(ablation.bestVariantByWholeRunModeledLinkBytes, "transition-only");
+  assert.equal(ablation.bestVariantByPostBoundaryModeledLinkBytes, "transition-only");
 });
