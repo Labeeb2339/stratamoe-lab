@@ -24,6 +24,10 @@ export interface SimulationConfig {
 export interface SimulationControls {
   /** Only affects ShiftCache; baseline behavior keeps transition prefetch enabled. */
   shiftCachePrefetch: boolean;
+  /** Adapt retention weights using the current router-distribution JSD score. */
+  shiftCacheJsdReweighting: boolean;
+  /** Include one-step transition predictions in the eviction retention score. */
+  shiftCacheTransitionRetention: boolean;
 }
 
 export type ComparisonConfig = Omit<SimulationConfig, "policy">;
@@ -244,6 +248,8 @@ export const DEFAULT_CONFIG: SimulationConfig = Object.freeze({
 
 export const DEFAULT_SIMULATION_CONTROLS: SimulationControls = Object.freeze({
   shiftCachePrefetch: true,
+  shiftCacheJsdReweighting: true,
+  shiftCacheTransitionRetention: true,
 });
 
 /** Runtime limits protect browser/CLI callers before trace allocation begins. */
@@ -439,11 +445,22 @@ export function validateSimulationControls(
   input: SimulationControls,
 ): SimulationControls {
   assertRecord(input, "Simulation controls");
-  assertAllowedKeys(input, "Simulation controls", ["shiftCachePrefetch"]);
-  if (typeof input.shiftCachePrefetch !== "boolean") {
-    throw new TypeError("shiftCachePrefetch must be a boolean.");
+  const keys = [
+    "shiftCachePrefetch",
+    "shiftCacheJsdReweighting",
+    "shiftCacheTransitionRetention",
+  ] as const;
+  assertAllowedKeys(input, "Simulation controls", keys);
+  for (const key of keys) {
+    if (typeof input[key] !== "boolean") {
+      throw new TypeError(`${key} must be a boolean.`);
+    }
   }
-  return { shiftCachePrefetch: input.shiftCachePrefetch };
+  return {
+    shiftCachePrefetch: input.shiftCachePrefetch,
+    shiftCacheJsdReweighting: input.shiftCacheJsdReweighting,
+    shiftCacheTransitionRetention: input.shiftCacheTransitionRetention,
+  };
 }
 
 function validateTraceDescriptor(input: TraceConfig): TraceConfig {
@@ -1272,13 +1289,18 @@ class HierarchySimulator {
       const longMaximum = Math.max(1, ...this.shiftTracker.longCounts.values());
       const shortMaximum = Math.max(1, ...this.shiftTracker.shortCounts.values());
       const predictionMaximum = Math.max(1, ...this.predictionScores.values());
-      const adaptation = Math.min(
-        1,
-        this.shiftTracker.currentScore / SHIFT_CACHE_PARAMETERS.shiftThresholdBits,
-      );
+      const adaptation = this.controls.shiftCacheJsdReweighting
+        ? Math.min(
+            1,
+            this.shiftTracker.currentScore /
+              SHIFT_CACHE_PARAMETERS.shiftThresholdBits,
+          )
+        : 0;
       const longWeight = 0.55 - 0.45 * adaptation;
       const shortWeight = 0.15 + 0.3 * adaptation;
-      const transitionWeight = 0.05 + 0.1 * adaptation;
+      const transitionWeight = this.controls.shiftCacheTransitionRetention
+        ? 0.05 + 0.1 * adaptation
+        : 0;
       const recencyWeight = 1 - longWeight - shortWeight - transitionWeight;
       const accessTime = this.lastAccess.get(key) ?? -1;
       const recency =

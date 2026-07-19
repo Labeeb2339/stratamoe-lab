@@ -23,6 +23,7 @@ const prefetchOn = runSimulation(
   DEFAULT_SIMULATION_CONTROLS,
 );
 const prefetchOff = runSimulation(config, CAPTURED_TRACE, {
+  ...DEFAULT_SIMULATION_CONTROLS,
   shiftCachePrefetch: false,
 });
 

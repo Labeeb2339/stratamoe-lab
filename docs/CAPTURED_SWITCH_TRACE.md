@@ -68,18 +68,18 @@ This is a useful negative result. On this captured trace and configuration,
 ShiftCache moved **44.67% more modeled bytes than LFU** and **23.30% more than
 LRU**. Its transition prefetcher issued 366 prefetches, of which 258 were not
 used before eviction or the end of replay. All policies saw the same three JSD
-threshold crossings, so detecting change did not make the current policy
-competitive here.
+threshold crossings, while the current ShiftCache score continuously reweighted
+retention and still did not make the policy competitive here.
 
 The result blocks any broad claim that the existing ShiftCache policy
-generalizes beyond its synthetic regression fixture. The next experiment must
-separate detector, reweighting, and prefetch effects and include a no-prefetch
-ablation before changing thresholds.
+generalizes beyond its synthetic regression fixture. The following controls
+therefore separate prefetch, JSD reweighting, and transition retention before
+any threshold is changed.
 
 ## Prefetch-disabled control
 
 The first ablation changes exactly one simulator control: ShiftCache transition
-prefetch is disabled while its JSD detector, frequency/recency reweighting,
+prefetch is disabled while its JSD score, frequency/recency reweighting,
 transition retention score, trace, and memory configuration remain fixed.
 
 ```bash
@@ -101,9 +101,40 @@ and made zero semantic routing changes.
 This supports a narrow diagnosis: speculative prefetch traffic polluted this
 particular replay. It does not show that prefetch is generally harmful. The
 no-prefetch control still moved **15.08% more modeled bytes than LFU**, although
-it moved **1.92% fewer than LRU**. Detector, retention reweighting, and transition
-score ablations are still required. The machine-readable result is
+it moved **1.92% fewer than LRU**. Retention reweighting and transition-score
+ablations were therefore required. The machine-readable result is
 [`prefetch-ablation.json`](../evidence/switch-base-8/prefetch-ablation.json).
+
+## Retention-factor ablation
+
+The second ablation keeps prefetch disabled and crosses two independent
+retention controls: continuous JSD-score reweighting and one-step transition
+retention.
+
+```bash
+npm run benchmark:captured:retention
+```
+
+| Variant | Modeled link bytes / token | First 32 post-boundary tokens | Whole run vs fixed |
+| --- | ---: | ---: | ---: |
+| Fixed frequency/recency | 400,372,093.02 B | 400,666,666.67 B/token | baseline |
+| JSD only | 417,637,209.30 B | 422,666,666.67 B/token | +4.31% |
+| Transition only | 398,288,372.09 B | 395,333,333.33 B/token | -0.52% |
+| JSD + transition | 411,088,372.09 B | 411,333,333.33 B/token | +2.68% |
+| LFU reference | 357,209,302.33 B | 349,333,333.33 B/token | — |
+
+The post-boundary aggregate covers the first 32 token positions after the
+public prompt groups change at positions `64`, `127`, and `167`. The shared JSD
+threshold crossings occurred at `23`, `59`, and `140`; more importantly, the
+current threshold event is telemetry only while the JSD score continuously
+changes eviction weights.
+
+On this replay, JSD-only scoring was **5.49% worse** than fixed scoring in the
+post-boundary windows. Transition-only was the best ShiftCache variant, but its
+whole-run traffic remained **11.50% worse than LFU**. This rejects a positive
+JSD story for this trace. It does not prove that JSD is generally harmful or
+that transition retention generalizes. The machine-readable result is
+[`retention-ablation.json`](../evidence/switch-base-8/retention-ablation.json).
 
 The resulting `comparison.json` must be described as:
 

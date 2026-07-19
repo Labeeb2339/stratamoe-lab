@@ -32,14 +32,17 @@ vector representation.
 StrataMoE's first pinned Switch-Base-8 trace is a failure case for the current
 combined ShiftCache policy. ShiftCache moved 44.67% more modeled bytes than LFU
 because 258 of 366 prefetches were unused. That result prevents a weak story in
-which JSD detection is assumed to help merely because it wins on one synthetic
+which JSD scoring is assumed to help merely because it wins on one synthetic
 fixture.
 
-Before any precision work, the captured-trace harness must separate:
+Before any precision work, the captured-trace harness needed to separate:
 
-1. change detection;
+1. JSD-score reweighting;
 2. recency/frequency reweighting; and
 3. transition prefetching.
+
+That first mechanism matrix is now complete. It found prefetch pollution and a
+negative JSD-score result on this trace; it did not validate change detection.
 
 ShiftQ-MoE should initially disable transition prefetching. Precision migration
 must have its own explicit byte budget and hysteresis.
@@ -234,22 +237,42 @@ A synthetic StrataMoE result alone can never pass this gate.
 
 ## Immediate next experiment
 
-Do not implement mixed precision yet. The first captured-trace control now
-disables transition prefetch while keeping the rest of ShiftCache fixed. It
-reduced modeled link bytes by 20.45% on the pinned Switch-Base-8 trace, but the
-control remained 15.08% worse than LFU. This diagnoses prefetch pollution on
-one replay; it does not validate the detector or establish generality.
+Do not implement mixed precision yet. The pinned Switch-Base-8 mechanism matrix
+is now complete with prefetch disabled:
 
-The evidence bundle now contains LRU, LFU, the current combined ShiftCache
-policy, and the prefetch-disabled ShiftCache control. Continue the matrix with:
+| Retention score | Whole-run modeled bytes vs fixed | First 32 post-boundary tokens vs fixed |
+| --- | ---: | ---: |
+| Fixed frequency/recency | baseline | baseline |
+| JSD only | +4.31% | +5.49% |
+| Transition only | -0.52% | -1.33% |
+| JSD plus transition | +2.68% | +2.66% |
 
-1. recency/frequency reweighting without JSD;
-2. JSD reweighting without the transition retention score; and
-3. transition retention scoring without JSD-driven weights.
+Transition-only was the best ShiftCache variant but remained 11.50% worse than
+LFU over the full replay. The JSD threshold crossings were at token positions
+23, 59, and 140, while the public semantic-group boundaries were at 64, 127,
+and 167. This is negative evidence for the current continuous JSD reweighting
+rule on one short encoder trace.
 
-The purpose is to identify whether the first captured failure came from the
-detector, the reweighting rule, or prefetch pollution. Only a stable detector
-and allocation signal should become the foundation for ShiftQ-MoE.
+The implementation also exposed a terminology boundary: a threshold crossing
+is currently telemetry only. The eviction weights change continuously with the
+JSD score, so StrataMoE does not yet contain a change-triggered controller.
+
+The next preregistered control is therefore a detector sanity experiment, not
+quantization. Use seeds `2300` through `2329`, `1024` tokens, and otherwise the
+fixed default synthetic configuration for both stationary and abrupt-shift
+traces. Add explicit persistence and cooldown before observing the sweep. Carry
+JSD gating forward only if all of these provisional engineering gates pass:
+
+1. at least 27 of 30 abrupt shifts trigger within 64 tokens of the known change;
+2. stationary traces produce at most one false trigger per 10,000 tokens;
+3. the median paired first-64-token post-shift modeled-byte reduction versus
+   fixed frequency/recency is at least 5%, with a paired-bootstrap 95% interval
+   below zero; and
+4. stationary whole-run modeled bytes regress by no more than 2%.
+
+These synthetic gates can reject a broken mechanism but cannot pass the real
+OLMoE detector gate or support a novelty claim. Only a stable detector and
+allocation signal should become the foundation for ShiftQ-MoE.
 
 The strongest honest working title is:
 

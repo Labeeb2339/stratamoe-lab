@@ -362,17 +362,33 @@ test("captured trace validation rejects mutable or incomplete provenance", () =>
 });
 
 test("config validation rejects unsafe or nonsensical settings", () => {
-  assert.deepEqual(validateSimulationControls({ shiftCachePrefetch: false }), {
-    shiftCachePrefetch: false,
-  });
+  assert.deepEqual(
+    validateSimulationControls({
+      shiftCachePrefetch: false,
+      shiftCacheJsdReweighting: true,
+      shiftCacheTransitionRetention: false,
+    }),
+    {
+      shiftCachePrefetch: false,
+      shiftCacheJsdReweighting: true,
+      shiftCacheTransitionRetention: false,
+    },
+  );
   assert.throws(
-    () => validateSimulationControls({ shiftCachePrefetch: "no" } as never),
+    () =>
+      validateSimulationControls({
+        shiftCachePrefetch: "no",
+        shiftCacheJsdReweighting: true,
+        shiftCacheTransitionRetention: true,
+      } as never),
     /shiftCachePrefetch must be a boolean/,
   );
   assert.throws(
     () =>
       validateSimulationControls({
         shiftCachePrefetch: true,
+        shiftCacheJsdReweighting: true,
+        shiftCacheTransitionRetention: true,
         unsupported: true,
       } as never),
     /unsupported field.*unsupported/,

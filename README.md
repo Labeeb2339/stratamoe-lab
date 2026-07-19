@@ -4,13 +4,13 @@
 
 StrataMoE Lab asks a deliberately narrow question:
 
-> Can an explicitly shift-aware cache policy reduce expert bytes streamed per token and modeled transfer stalls after routing-distribution changes, compared with LRU and LFU, without changing the router's selected experts?
+> Can router-distribution change signals improve expert placement after workload shifts, compared with LRU and LFU, without changing the router's selected experts?
 
 The repository implements an inspectable experiment, not a production inference engine. It replays synthetic or imported router traces through a modeled memory hierarchy and compares three policies on the exact same expert selections:
 
 - **LRU** keeps the most recently used experts.
 - **LFU** keeps the most frequently used experts over the run.
-- **ShiftCache** compares recent and longer-horizon activation distributions with Jensen-Shannon divergence, then shifts weight from historical frequency toward recency and observed one-step transitions when the distributions separate.
+- **ShiftCache** compares recent and longer-horizon activation distributions with Jensen-Shannon divergence (JSD), continuously reweights historical frequency, recent frequency, and recency, and can add observed one-step transition scores. Threshold-crossing events are currently telemetry; they do not yet trigger a separate controller action.
 
 Every policy moves the requested expert weights; none may replace, skip, reroute, or silently lower the precision of a selected expert. `semanticRoutingChanges` should therefore remain zero.
 
@@ -49,18 +49,26 @@ than LFU by modeled bytes** on this trace. Its transition prefetcher used only
 memory traffic and timing remain simulated. See the full [capture and replay
 record](docs/CAPTURED_SWITCH_TRACE.md).
 
-The first mechanism ablation keeps ShiftCache's detector and retention scoring
+The first mechanism ablation keeps ShiftCache's JSD signal and retention scoring
 fixed while disabling transition prefetch. On the same trace, modeled link
 bytes fell from `516,762,790.70` to `411,088,372.09` per token (**20.45%**),
 and modeled transfer stall fell **15.69%**. The no-prefetch control was still
 **15.08% worse than LFU**, so this result identifies prefetch pollution without
 establishing that the remaining ShiftCache policy is generally competitive.
 
+The next no-prefetch 2×2 ablation separates continuous JSD reweighting from
+transition retention. Relative to fixed frequency/recency scoring, JSD alone
+increased whole-run modeled link bytes by **4.31%** and first-32-token
+post-boundary bytes by **5.49%**. Transition retention alone reduced them by
+only **0.52%** and **1.33%**, respectively. It was the best ShiftCache variant
+but still moved **11.50% more whole-run modeled bytes than LFU**. On this trace,
+JSD reweighting is negative evidence, not a result to promote as a win.
+
 ## Why this experiment exists
 
 [Colibrì](https://github.com/JustVugg/colibri) demonstrates a real VRAM/RAM/storage hierarchy, per-layer caching, pinned hot experts, and live placement policies while preserving router semantics by default. [MoE-Infinity](https://arxiv.org/abs/2401.14361) studies request-level activation traces, predictive caching, and recovery after task or dataset shifts. [DALI](https://arxiv.org/abs/2602.03495) already proposes workload-aware cache replacement, and Colibrì now documents an LFRU-style live placement policy. Those systems make a broad “first workload-aware MoE cache” claim indefensible here.
 
-StrataMoE Lab instead contributes a small, reproducible surface for isolating one hypothesis: whether **explicit distribution-change detection** helps a non-semantic placement policy recover from abrupt shifts in a controlled trace. The first captured trace is a negative result for the current combined policy, which makes detector and prefetch ablations the immediate next step. Scientific novelty would still require multiple real router traces, stronger baselines, hardware measurements, ablations, and statistical replication.
+StrataMoE Lab instead contributes a small, reproducible surface for isolating one hypothesis: whether **router-distribution change signals** can help a non-semantic placement policy recover from abrupt shifts in a controlled trace. The first captured trace is a negative result for continuous JSD reweighting. A genuinely change-triggered controller still requires persistence, cooldown, and ground-truth timing evaluation before it exists in this project. Scientific novelty would still require multiple real router traces, stronger baselines, hardware measurements, ablations, and statistical replication.
 
 ## Quick start
 
@@ -86,6 +94,7 @@ npm run check
 npm run benchmark
 npm run benchmark:captured
 npm run benchmark:captured:prefetch
+npm run benchmark:captured:retention
 ```
 
 The dashboard lets you choose a scenario, seed, token count, model shape, cache capacity, expert size, and modeled bandwidths; run all policies; inspect per-token behavior and final tier residency; and export or import deterministic router traces.

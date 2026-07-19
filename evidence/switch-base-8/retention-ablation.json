@@ -1,0 +1,515 @@
+{
+  "benchmark": "switch-base-8-retention-factorial-v1",
+  "question": "With prefetch disabled, how do JSD-score reweighting and transition retention affect modeled traffic on the pinned captured trace?",
+  "evidenceBoundary": "Router selections came from a pinned Switch-Base-8 encoder execution and semantic boundaries come from its public prompt manifest. Placement traffic and stalls remain simulated. This 215-token diagnostic trace cannot validate change detection, language-model quality, or a ShiftQ-MoE research claim.",
+  "terminology": "The current JSD score continuously changes eviction weights; threshold-crossing events are telemetry and do not trigger a separate controller action.",
+  "traceSha256": "63f4c131866f560999c95ec8cfcc8dcea4a0e7677553f2b02a35a0d709d4d175",
+  "traceFingerprint": "f3b18fe2",
+  "source": {
+    "kind": "captured",
+    "model": {
+      "id": "google/switch-base-8",
+      "revision": "92fe2d22b024d9937146fe097ba3d3a7ba146e1b"
+    },
+    "tokenizer": {
+      "revision": "92fe2d22b024d9937146fe097ba3d3a7ba146e1b"
+    },
+    "software": {
+      "transformersVersion": "4.57.1",
+      "pytorchVersion": "2.7.1+cpu"
+    },
+    "workload": {
+      "kind": "prompt-manifest",
+      "sha256": "ac50b43c66c8228f320324a83f58d1c94977b3de049f0b1cda06dd05da0a5141"
+    },
+    "capture": {
+      "seed": 2339,
+      "device": "cpu",
+      "dtype": "torch.float32"
+    }
+  },
+  "config": {
+    "scenario": "domain-shift",
+    "seed": 2339,
+    "tokens": 215,
+    "layers": 6,
+    "expertsPerLayer": 8,
+    "topK": 1,
+    "gpuSlots": 12,
+    "ramSlots": 18,
+    "expertSizeMB": 64,
+    "pcieGBps": 24,
+    "nvmeGBps": 7,
+    "computeMsPerToken": 6
+  },
+  "shiftCacheParameters": {
+    "minimumShortWindowTokens": 4,
+    "maximumShortWindowTokens": 12,
+    "longWindowMultiplier": 4,
+    "shiftThresholdBits": 0.28,
+    "rearmThresholdBits": 0.12,
+    "minimumTransitionObservations": 2,
+    "maximumPrefetchesPerToken": 2
+  },
+  "semanticGroupBoundaries": [
+    {
+      "token": 64,
+      "group": "electronics"
+    },
+    {
+      "token": 127,
+      "group": "science"
+    },
+    {
+      "token": 167,
+      "group": "software"
+    }
+  ],
+  "traceDiagnostics": {
+    "totalExpertSelections": 1290,
+    "uniqueExperts": 48,
+    "immediateReuseRate": 0.18224299,
+    "segmentTokens": 16,
+    "segmentOracleHitRate": 0.50465116
+  },
+  "variants": [
+    {
+      "id": "fixed-frequency-recency",
+      "description": "Fixed long-window, short-window, and recency weights; no JSD reweighting or transition retention.",
+      "controls": {
+        "shiftCachePrefetch": false,
+        "shiftCacheJsdReweighting": false,
+        "shiftCacheTransitionRetention": false
+      },
+      "detectedShiftEvents": [
+        {
+          "token": 23,
+          "scoreBits": 0.31220952
+        },
+        {
+          "token": 59,
+          "scoreBits": 0.2872084
+        },
+        {
+          "token": 140,
+          "scoreBits": 0.28594068
+        }
+      ],
+      "metrics": {
+        "gpuHitRate": 0.29457364,
+        "ramHitRate": 0.36821705,
+        "nvmeMissRate": 0.3372093,
+        "bytesPerToken": 400372093.02,
+        "transferStallMsPerToken": 29.78516058,
+        "tokensPerSecond": 27.94454416,
+        "evictions": 1303,
+        "prefetchUsefulness": 0,
+        "detectedShifts": 3,
+        "semanticRoutingChanges": 0,
+        "totalAccesses": 1290,
+        "gpuHits": 380,
+        "ramHits": 475,
+        "nvmeMisses": 435,
+        "totalBytesTransferred": 86080000000,
+        "demandBytesTransferred": 58240000000,
+        "prefetchBytesTransferred": 0,
+        "nvmeBytesRead": 27840000000,
+        "totalTransferStallMs": 6403.80952381,
+        "gpuEvictions": 898,
+        "ramEvictions": 405,
+        "prefetchesIssued": 0,
+        "prefetchesUseful": 0,
+        "prefetchesWasted": 0,
+        "prefetchesPending": 0,
+        "segmentOracleHitRate": 0.50465116
+      },
+      "postBoundary": {
+        "windowTokens": 32,
+        "windows": [
+          {
+            "boundaryToken": 64,
+            "group": "electronics",
+            "endExclusive": 96,
+            "observedTokens": 32,
+            "totalModeledLinkBytes": 12864000000,
+            "modeledLinkBytesPerToken": 402000000
+          },
+          {
+            "boundaryToken": 127,
+            "group": "science",
+            "endExclusive": 159,
+            "observedTokens": 32,
+            "totalModeledLinkBytes": 11840000000,
+            "modeledLinkBytesPerToken": 370000000
+          },
+          {
+            "boundaryToken": 167,
+            "group": "software",
+            "endExclusive": 199,
+            "observedTokens": 32,
+            "totalModeledLinkBytes": 13760000000,
+            "modeledLinkBytesPerToken": 430000000
+          }
+        ],
+        "aggregate": {
+          "observedTokens": 96,
+          "totalModeledLinkBytes": 38464000000,
+          "modeledLinkBytesPerToken": 400666666.67
+        }
+      },
+      "versusFixedFrequencyRecency": {
+        "wholeRunModeledLinkBytesPercentChange": 0,
+        "postBoundaryModeledLinkBytesPercentChange": 0
+      },
+      "versusLfu": {
+        "wholeRunModeledLinkBytesPercentChange": 12.08333333,
+        "postBoundaryModeledLinkBytesPercentChange": 14.69465649
+      }
+    },
+    {
+      "id": "jsd-only",
+      "description": "JSD continuously reweights long-window, short-window, and recency terms; no transition retention.",
+      "controls": {
+        "shiftCachePrefetch": false,
+        "shiftCacheJsdReweighting": true,
+        "shiftCacheTransitionRetention": false
+      },
+      "detectedShiftEvents": [
+        {
+          "token": 23,
+          "scoreBits": 0.31220952
+        },
+        {
+          "token": 59,
+          "scoreBits": 0.2872084
+        },
+        {
+          "token": 140,
+          "scoreBits": 0.28594068
+        }
+      ],
+      "metrics": {
+        "gpuHitRate": 0.2744186,
+        "ramHitRate": 0.36356589,
+        "nvmeMissRate": 0.3620155,
+        "bytesPerToken": 417637209.3,
+        "transferStallMsPerToken": 31.46843854,
+        "tokensPerSecond": 26.68912928,
+        "evictions": 1361,
+        "prefetchUsefulness": 0,
+        "detectedShifts": 3,
+        "semanticRoutingChanges": 0,
+        "totalAccesses": 1290,
+        "gpuHits": 354,
+        "ramHits": 469,
+        "nvmeMisses": 467,
+        "totalBytesTransferred": 89792000000,
+        "demandBytesTransferred": 59904000000,
+        "prefetchBytesTransferred": 0,
+        "nvmeBytesRead": 29888000000,
+        "totalTransferStallMs": 6765.71428571,
+        "gpuEvictions": 924,
+        "ramEvictions": 437,
+        "prefetchesIssued": 0,
+        "prefetchesUseful": 0,
+        "prefetchesWasted": 0,
+        "prefetchesPending": 0,
+        "segmentOracleHitRate": 0.50465116
+      },
+      "postBoundary": {
+        "windowTokens": 32,
+        "windows": [
+          {
+            "boundaryToken": 64,
+            "group": "electronics",
+            "endExclusive": 96,
+            "observedTokens": 32,
+            "totalModeledLinkBytes": 13440000000,
+            "modeledLinkBytesPerToken": 420000000
+          },
+          {
+            "boundaryToken": 127,
+            "group": "science",
+            "endExclusive": 159,
+            "observedTokens": 32,
+            "totalModeledLinkBytes": 12608000000,
+            "modeledLinkBytesPerToken": 394000000
+          },
+          {
+            "boundaryToken": 167,
+            "group": "software",
+            "endExclusive": 199,
+            "observedTokens": 32,
+            "totalModeledLinkBytes": 14528000000,
+            "modeledLinkBytesPerToken": 454000000
+          }
+        ],
+        "aggregate": {
+          "observedTokens": 96,
+          "totalModeledLinkBytes": 40576000000,
+          "modeledLinkBytesPerToken": 422666666.67
+        }
+      },
+      "versusFixedFrequencyRecency": {
+        "wholeRunModeledLinkBytesPercentChange": 4.31226766,
+        "postBoundaryModeledLinkBytesPercentChange": 5.49084859
+      },
+      "versusLfu": {
+        "wholeRunModeledLinkBytesPercentChange": 16.91666667,
+        "postBoundaryModeledLinkBytesPercentChange": 20.99236641
+      }
+    },
+    {
+      "id": "transition-only",
+      "description": "Fixed frequency/recency weights plus transition retention; no JSD reweighting.",
+      "controls": {
+        "shiftCachePrefetch": false,
+        "shiftCacheJsdReweighting": false,
+        "shiftCacheTransitionRetention": true
+      },
+      "detectedShiftEvents": [
+        {
+          "token": 23,
+          "scoreBits": 0.31220952
+        },
+        {
+          "token": 59,
+          "scoreBits": 0.2872084
+        },
+        {
+          "token": 140,
+          "scoreBits": 0.28594068
+        }
+      ],
+      "metrics": {
+        "gpuHitRate": 0.29379845,
+        "ramHitRate": 0.3751938,
+        "nvmeMissRate": 0.33100775,
+        "bytesPerToken": 398288372.09,
+        "transferStallMsPerToken": 29.45736434,
+        "tokensPerSecond": 28.20288588,
+        "evictions": 1296,
+        "prefetchUsefulness": 0,
+        "detectedShifts": 3,
+        "semanticRoutingChanges": 0,
+        "totalAccesses": 1290,
+        "gpuHits": 379,
+        "ramHits": 484,
+        "nvmeMisses": 427,
+        "totalBytesTransferred": 85632000000,
+        "demandBytesTransferred": 58304000000,
+        "prefetchBytesTransferred": 0,
+        "nvmeBytesRead": 27328000000,
+        "totalTransferStallMs": 6333.33333333,
+        "gpuEvictions": 899,
+        "ramEvictions": 397,
+        "prefetchesIssued": 0,
+        "prefetchesUseful": 0,
+        "prefetchesWasted": 0,
+        "prefetchesPending": 0,
+        "segmentOracleHitRate": 0.50465116
+      },
+      "postBoundary": {
+        "windowTokens": 32,
+        "windows": [
+          {
+            "boundaryToken": 64,
+            "group": "electronics",
+            "endExclusive": 96,
+            "observedTokens": 32,
+            "totalModeledLinkBytes": 12416000000,
+            "modeledLinkBytesPerToken": 388000000
+          },
+          {
+            "boundaryToken": 127,
+            "group": "science",
+            "endExclusive": 159,
+            "observedTokens": 32,
+            "totalModeledLinkBytes": 11648000000,
+            "modeledLinkBytesPerToken": 364000000
+          },
+          {
+            "boundaryToken": 167,
+            "group": "software",
+            "endExclusive": 199,
+            "observedTokens": 32,
+            "totalModeledLinkBytes": 13888000000,
+            "modeledLinkBytesPerToken": 434000000
+          }
+        ],
+        "aggregate": {
+          "observedTokens": 96,
+          "totalModeledLinkBytes": 37952000000,
+          "modeledLinkBytesPerToken": 395333333.33
+        }
+      },
+      "versusFixedFrequencyRecency": {
+        "wholeRunModeledLinkBytesPercentChange": -0.5204461,
+        "postBoundaryModeledLinkBytesPercentChange": -1.33111481
+      },
+      "versusLfu": {
+        "wholeRunModeledLinkBytesPercentChange": 11.5,
+        "postBoundaryModeledLinkBytesPercentChange": 13.16793893
+      }
+    },
+    {
+      "id": "jsd-and-transition",
+      "description": "Current combined retention score with JSD reweighting and transition retention.",
+      "controls": {
+        "shiftCachePrefetch": false,
+        "shiftCacheJsdReweighting": true,
+        "shiftCacheTransitionRetention": true
+      },
+      "detectedShiftEvents": [
+        {
+          "token": 23,
+          "scoreBits": 0.31220952
+        },
+        {
+          "token": 59,
+          "scoreBits": 0.2872084
+        },
+        {
+          "token": 140,
+          "scoreBits": 0.28594068
+        }
+      ],
+      "metrics": {
+        "gpuHitRate": 0.28062016,
+        "ramHitRate": 0.36821705,
+        "nvmeMissRate": 0.35116279,
+        "bytesPerToken": 411088372.09,
+        "transferStallMsPerToken": 30.77386489,
+        "tokensPerSecond": 27.19322548,
+        "evictions": 1339,
+        "prefetchUsefulness": 0,
+        "detectedShifts": 3,
+        "semanticRoutingChanges": 0,
+        "totalAccesses": 1290,
+        "gpuHits": 362,
+        "ramHits": 475,
+        "nvmeMisses": 453,
+        "totalBytesTransferred": 88384000000,
+        "demandBytesTransferred": 59392000000,
+        "prefetchBytesTransferred": 0,
+        "nvmeBytesRead": 28992000000,
+        "totalTransferStallMs": 6616.38095238,
+        "gpuEvictions": 916,
+        "ramEvictions": 423,
+        "prefetchesIssued": 0,
+        "prefetchesUseful": 0,
+        "prefetchesWasted": 0,
+        "prefetchesPending": 0,
+        "segmentOracleHitRate": 0.50465116
+      },
+      "postBoundary": {
+        "windowTokens": 32,
+        "windows": [
+          {
+            "boundaryToken": 64,
+            "group": "electronics",
+            "endExclusive": 96,
+            "observedTokens": 32,
+            "totalModeledLinkBytes": 12928000000,
+            "modeledLinkBytesPerToken": 404000000
+          },
+          {
+            "boundaryToken": 127,
+            "group": "science",
+            "endExclusive": 159,
+            "observedTokens": 32,
+            "totalModeledLinkBytes": 12160000000,
+            "modeledLinkBytesPerToken": 380000000
+          },
+          {
+            "boundaryToken": 167,
+            "group": "software",
+            "endExclusive": 199,
+            "observedTokens": 32,
+            "totalModeledLinkBytes": 14400000000,
+            "modeledLinkBytesPerToken": 450000000
+          }
+        ],
+        "aggregate": {
+          "observedTokens": 96,
+          "totalModeledLinkBytes": 39488000000,
+          "modeledLinkBytesPerToken": 411333333.33
+        }
+      },
+      "versusFixedFrequencyRecency": {
+        "wholeRunModeledLinkBytesPercentChange": 2.67657993,
+        "postBoundaryModeledLinkBytesPercentChange": 2.66222962
+      },
+      "versusLfu": {
+        "wholeRunModeledLinkBytesPercentChange": 15.08333333,
+        "postBoundaryModeledLinkBytesPercentChange": 17.7480916
+      }
+    }
+  ],
+  "lfuReference": {
+    "metrics": {
+      "gpuHitRate": 0.35658915,
+      "ramHitRate": 0.35658915,
+      "nvmeMissRate": 0.28682171,
+      "bytesPerToken": 357209302.33,
+      "transferStallMsPerToken": 26.02879291,
+      "tokensPerSecond": 31.2219072,
+      "evictions": 1158,
+      "prefetchUsefulness": 0,
+      "detectedShifts": 3,
+      "semanticRoutingChanges": 0,
+      "totalAccesses": 1290,
+      "gpuHits": 460,
+      "ramHits": 460,
+      "nvmeMisses": 370,
+      "totalBytesTransferred": 76800000000,
+      "demandBytesTransferred": 53120000000,
+      "prefetchBytesTransferred": 0,
+      "nvmeBytesRead": 23680000000,
+      "totalTransferStallMs": 5596.19047619,
+      "gpuEvictions": 818,
+      "ramEvictions": 340,
+      "prefetchesIssued": 0,
+      "prefetchesUseful": 0,
+      "prefetchesWasted": 0,
+      "prefetchesPending": 0,
+      "segmentOracleHitRate": 0.50465116
+    },
+    "postBoundary": {
+      "windowTokens": 32,
+      "windows": [
+        {
+          "boundaryToken": 64,
+          "group": "electronics",
+          "endExclusive": 96,
+          "observedTokens": 32,
+          "totalModeledLinkBytes": 11392000000,
+          "modeledLinkBytesPerToken": 356000000
+        },
+        {
+          "boundaryToken": 127,
+          "group": "science",
+          "endExclusive": 159,
+          "observedTokens": 32,
+          "totalModeledLinkBytes": 11200000000,
+          "modeledLinkBytesPerToken": 350000000
+        },
+        {
+          "boundaryToken": 167,
+          "group": "software",
+          "endExclusive": 199,
+          "observedTokens": 32,
+          "totalModeledLinkBytes": 10944000000,
+          "modeledLinkBytesPerToken": 342000000
+        }
+      ],
+      "aggregate": {
+        "observedTokens": 96,
+        "totalModeledLinkBytes": 33536000000,
+        "modeledLinkBytesPerToken": 349333333.33
+      }
+    }
+  },
+  "bestVariantByWholeRunModeledLinkBytes": "transition-only",
+  "bestVariantByPostBoundaryModeledLinkBytes": "transition-only"
+}

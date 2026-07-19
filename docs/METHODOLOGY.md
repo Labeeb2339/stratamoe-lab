@@ -4,7 +4,7 @@
 
 StrataMoE Lab evaluates a cache-policy hypothesis, not a language-model hypothesis:
 
-> Under a fixed expert-routing trace, can a policy that detects changes in the activation distribution reduce simulated lower-tier traffic and bandwidth-derived stalls after a shift, relative to LRU and LFU?
+> Under a fixed expert-routing trace, can a policy that uses changes in the activation distribution reduce simulated lower-tier traffic and bandwidth-derived stalls after a shift, relative to LRU and LFU?
 
 The independent variable is the placement policy. The router trace is controlled and identical across policies. The principal outcomes are bytes moved per token and estimated transfer stall per token. GPU, RAM, and NVMe hit rates are supporting diagnostics.
 
@@ -67,7 +67,12 @@ JSD(P, Q) = 0.5 * KL(P || M) + 0.5 * KL(Q || M)
 
 Jensen-Shannon divergence is symmetric and finite for discrete distributions with non-overlapping support; the measure is traced to Jianhua Lin's [1991 paper](https://doi.org/10.1109/18.61115). In this simulator it is a heuristic change signal, not a calibrated statistical test.
 
-As divergence rises, ShiftCache reduces the weight assigned to long-term frequency and increases the influence of recent frequency and learned one-step expert transitions. A transition score estimates which expert is likely after recently observed experts. Prefetching may promote an exact expert earlier; a wrong prefetch wastes bandwidth or cache capacity but must not change later router selections.
+As divergence rises, ShiftCache continuously reduces the weight assigned to long-term frequency and increases the influence of recent frequency, recency, and optionally learned one-step expert transitions. A transition score estimates which expert is likely after recently observed experts. Prefetching may promote an exact expert earlier; a wrong prefetch wastes bandwidth or cache capacity but must not change later router selections.
+
+The current threshold-crossing event is telemetry only. It does not gate the
+retention formula or trigger a separate policy update. This implementation is
+therefore described as **JSD-score reweighting**, not a completed
+change-triggered detector/controller.
 
 This combination is a **project hypothesis**, not a claim that distribution-aware caching, recency/frequency hybrids, transition prediction, or workload adaptation are new. MoE-Infinity studies request-level activation patterns and workload changes; DALI studies workload-aware cache replacement; HybriMoE uses score-based caching for unstable activations; and Colibrì documents live LFRU placement.
 
@@ -148,6 +153,17 @@ ShiftCache combines several mechanisms. Its effect cannot be attributed to shift
 - true shift location versus detected shift timing.
 
 Detection quality should include delay, false positives, and missed shifts—not only downstream hit rate.
+
+The pinned Switch-Base-8 replay now completes the first four retention cells
+with prefetch disabled. JSD-only scoring increased modeled link bytes by 4.31%
+relative to fixed frequency/recency scoring, while transition-only scoring
+reduced them by 0.52%. The combined score was 2.68% worse than the fixed score,
+and every ShiftCache variant remained worse than LFU. These are descriptive
+results from one 215-token encoder trace, not estimates of a population effect.
+
+The next detector experiment must implement explicit persistence and cooldown,
+record known synthetic change points, and evaluate delay, misses, and stationary
+false triggers across a preregistered seed set before any threshold is changed.
 
 ## 9. Path to real-trace validation
 

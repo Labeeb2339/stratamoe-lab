@@ -61,7 +61,9 @@
     {
       "id": "prefetch-on",
       "controls": {
-        "shiftCachePrefetch": true
+        "shiftCachePrefetch": true,
+        "shiftCacheJsdReweighting": true,
+        "shiftCacheTransitionRetention": true
       },
       "metrics": {
         "gpuHitRate": 0.32325581,
@@ -95,7 +97,9 @@
     {
       "id": "prefetch-off",
       "controls": {
-        "shiftCachePrefetch": false
+        "shiftCachePrefetch": false,
+        "shiftCacheJsdReweighting": true,
+        "shiftCacheTransitionRetention": true
       },
       "metrics": {
         "gpuHitRate": 0.28062016,
