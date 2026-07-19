@@ -18,7 +18,7 @@ Every policy moves the requested expert weights; none may replace, skip, reroute
 
 | This repository does | This repository does not do |
 | --- | --- |
-| Generate deterministic steady-locality, abrupt-shift, and high-churn traces | Load or execute an MoE checkpoint |
+| Generate deterministic traces and include one pinned real-model router capture | Execute a checkpoint inside the browser dashboard |
 | Import and export provenance-bearing router traces as JSON | Measure a physical GPU, PCIe bus, RAM subsystem, or SSD |
 | Model GPU/RAM/NVMe residency and transfers | Run CUDA kernels, DMA, decompression, or quantized matrix multiplication |
 | Compare policies on identical routing decisions | Establish model-quality preservation on generated text |
@@ -38,11 +38,22 @@ The honest result format is: **“On trace T under configuration C, policy A red
 
 On this one checked-in synthetic fixture, ShiftCache moves **6.60% fewer modeled link bytes** and has **5.36% less modeled transfer stall** than LRU. Prefetch traffic is included, and all policies report `semanticRoutingChanges = 0`. This is a deterministic regression result, not evidence of general superiority or measured hardware speed.
 
+## First captured-router result
+
+The pinned Switch-Base-8 trace is deliberately reported even though it is a
+failure case for ShiftCache. Under the fixed captured-trace configuration, LFU
+used `357,209,302.33` modeled link bytes per token, LRU used `419,125,581.40`,
+and ShiftCache used `516,762,790.70`. ShiftCache was therefore **44.67% worse
+than LFU by modeled bytes** on this trace. Its transition prefetcher used only
+108 of 366 issued prefetches. Router selections are captured model outputs;
+memory traffic and timing remain simulated. See the full [capture and replay
+record](docs/CAPTURED_SWITCH_TRACE.md).
+
 ## Why this experiment exists
 
 [Colibrì](https://github.com/JustVugg/colibri) demonstrates a real VRAM/RAM/storage hierarchy, per-layer caching, pinned hot experts, and live placement policies while preserving router semantics by default. [MoE-Infinity](https://arxiv.org/abs/2401.14361) studies request-level activation traces, predictive caching, and recovery after task or dataset shifts. [DALI](https://arxiv.org/abs/2602.03495) already proposes workload-aware cache replacement, and Colibrì now documents an LFRU-style live placement policy. Those systems make a broad “first workload-aware MoE cache” claim indefensible here.
 
-StrataMoE Lab instead contributes a small, reproducible surface for isolating one hypothesis: whether **explicit distribution-change detection** helps a non-semantic placement policy recover from abrupt shifts in a controlled trace. The current simulator is an experiment scaffold. Scientific novelty would require real router traces, stronger baselines, hardware measurements, ablations, and statistical replication.
+StrataMoE Lab instead contributes a small, reproducible surface for isolating one hypothesis: whether **explicit distribution-change detection** helps a non-semantic placement policy recover from abrupt shifts in a controlled trace. The first captured trace is a negative result for the current combined policy, which makes detector and prefetch ablations the immediate next step. Scientific novelty would still require multiple real router traces, stronger baselines, hardware measurements, ablations, and statistical replication.
 
 ## Quick start
 
@@ -66,11 +77,14 @@ Quality and experiment commands are declared in `package.json`:
 ```bash
 npm run check
 npm run benchmark
+npm run benchmark:captured
 ```
 
 The dashboard lets you choose a scenario, seed, token count, model shape, cache capacity, expert size, and modeled bandwidths; run all policies; inspect per-token behavior and final tier residency; and export or import deterministic router traces.
 
 RouterTrace v2 records `source.kind` as either `synthetic` or `captured`. Captured traces must pin immutable model and tokenizer revisions, software versions, capture settings, and either ordered dataset example IDs or the SHA-256 of an external prompt manifest. Provenance is included in the trace fingerprint. Legacy v1 files still import, but are conservatively marked as synthetic because they contain no evidence of how their selections were obtained. See the [RouterTrace v2 schema](docs/ROUTER_TRACE_SCHEMA.md).
+
+The first checked-in captured trace comes from pinned `google/switch-base-8` encoder routing: `215` non-padding token positions, `6` sparse layers, top-`1`, and `8` experts per layer. The capture script, non-private prompt manifest, hashes, and replay output are documented in [Captured Switch-Base-8 router trace](docs/CAPTURED_SWITCH_TRACE.md). Its router IDs are real model outputs; all memory and timing numbers produced by StrataMoE remain simulated.
 
 ## Reproducible comparison checklist
 
@@ -89,6 +103,7 @@ When reporting a result, include:
 - [Methodology](docs/METHODOLOGY.md) — experiment design, metrics, equations, and validation plan
 - [Related work](docs/RELATED_WORK.md) — primary papers and official repositories, including work from Chinese universities and labs
 - [Limitations](docs/LIMITATIONS.md) — what the simulator cannot support as a claim
+- [Captured Switch-Base-8 trace](docs/CAPTURED_SWITCH_TRACE.md) — pinned model execution, provenance, reproduction, and replay boundary
 - [Two-minute outreach demo](docs/OUTREACH_DEMO.md) — an honest walkthrough and ask for the 2026-07-21 call
 
 [RouterTrace v2 schema](docs/ROUTER_TRACE_SCHEMA.md) documents synthetic/captured provenance, validation, privacy, and v1 migration.

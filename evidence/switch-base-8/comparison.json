@@ -1,0 +1,146 @@
+{
+  "benchmark": "switch-base-8-captured-router-v1",
+  "evidenceBoundary": "Router selections came from a pinned model execution; memory traffic, stalls, and throughput remain simulated.",
+  "traceSha256": "63f4c131866f560999c95ec8cfcc8dcea4a0e7677553f2b02a35a0d709d4d175",
+  "traceFingerprint": "f3b18fe2",
+  "source": {
+    "kind": "captured",
+    "model": {
+      "id": "google/switch-base-8",
+      "revision": "92fe2d22b024d9937146fe097ba3d3a7ba146e1b"
+    },
+    "tokenizer": {
+      "revision": "92fe2d22b024d9937146fe097ba3d3a7ba146e1b"
+    },
+    "software": {
+      "transformersVersion": "4.57.1",
+      "pytorchVersion": "2.7.1+cpu"
+    },
+    "workload": {
+      "kind": "prompt-manifest",
+      "sha256": "ac50b43c66c8228f320324a83f58d1c94977b3de049f0b1cda06dd05da0a5141"
+    },
+    "capture": {
+      "seed": 2339,
+      "device": "cpu",
+      "dtype": "torch.float32"
+    }
+  },
+  "config": {
+    "scenario": "domain-shift",
+    "seed": 2339,
+    "tokens": 215,
+    "layers": 6,
+    "expertsPerLayer": 8,
+    "topK": 1,
+    "gpuSlots": 12,
+    "ramSlots": 18,
+    "expertSizeMB": 64,
+    "pcieGBps": 24,
+    "nvmeGBps": 7,
+    "computeMsPerToken": 6
+  },
+  "traceDiagnostics": {
+    "totalExpertSelections": 1290,
+    "uniqueExperts": 48,
+    "immediateReuseRate": 0.18224299,
+    "segmentTokens": 16,
+    "segmentOracleHitRate": 0.50465116
+  },
+  "winnerByModeledBytes": "lfu",
+  "results": [
+    {
+      "policy": "lru",
+      "metrics": {
+        "gpuHitRate": 0.2744186,
+        "ramHitRate": 0.35968992,
+        "nvmeMissRate": 0.36589147,
+        "bytesPerToken": 419125581.4,
+        "transferStallMsPerToken": 31.68106312,
+        "tokensPerSecond": 26.53852936,
+        "evictions": 1366,
+        "prefetchUsefulness": 0,
+        "detectedShifts": 3,
+        "semanticRoutingChanges": 0,
+        "totalAccesses": 1290,
+        "gpuHits": 354,
+        "ramHits": 464,
+        "nvmeMisses": 472,
+        "totalBytesTransferred": 90112000000,
+        "demandBytesTransferred": 59904000000,
+        "prefetchBytesTransferred": 0,
+        "nvmeBytesRead": 30208000000,
+        "totalTransferStallMs": 6811.42857143,
+        "gpuEvictions": 924,
+        "ramEvictions": 442,
+        "prefetchesIssued": 0,
+        "prefetchesUseful": 0,
+        "prefetchesWasted": 0,
+        "prefetchesPending": 0,
+        "segmentOracleHitRate": 0.50465116
+      }
+    },
+    {
+      "policy": "lfu",
+      "metrics": {
+        "gpuHitRate": 0.35658915,
+        "ramHitRate": 0.35658915,
+        "nvmeMissRate": 0.28682171,
+        "bytesPerToken": 357209302.33,
+        "transferStallMsPerToken": 26.02879291,
+        "tokensPerSecond": 31.2219072,
+        "evictions": 1158,
+        "prefetchUsefulness": 0,
+        "detectedShifts": 3,
+        "semanticRoutingChanges": 0,
+        "totalAccesses": 1290,
+        "gpuHits": 460,
+        "ramHits": 460,
+        "nvmeMisses": 370,
+        "totalBytesTransferred": 76800000000,
+        "demandBytesTransferred": 53120000000,
+        "prefetchBytesTransferred": 0,
+        "nvmeBytesRead": 23680000000,
+        "totalTransferStallMs": 5596.19047619,
+        "gpuEvictions": 818,
+        "ramEvictions": 340,
+        "prefetchesIssued": 0,
+        "prefetchesUseful": 0,
+        "prefetchesWasted": 0,
+        "prefetchesPending": 0,
+        "segmentOracleHitRate": 0.50465116
+      }
+    },
+    {
+      "policy": "shift-cache",
+      "metrics": {
+        "gpuHitRate": 0.32325581,
+        "ramHitRate": 0.35271318,
+        "nvmeMissRate": 0.32403101,
+        "bytesPerToken": 516762790.7,
+        "transferStallMsPerToken": 36.50232558,
+        "tokensPerSecond": 23.52812432,
+        "evictions": 1694,
+        "prefetchUsefulness": 0.29508197,
+        "detectedShifts": 3,
+        "semanticRoutingChanges": 0,
+        "totalAccesses": 1290,
+        "gpuHits": 417,
+        "ramHits": 455,
+        "nvmeMisses": 418,
+        "totalBytesTransferred": 111104000000,
+        "demandBytesTransferred": 55872000000,
+        "prefetchBytesTransferred": 23424000000,
+        "nvmeBytesRead": 31808000000,
+        "totalTransferStallMs": 7848,
+        "gpuEvictions": 1227,
+        "ramEvictions": 467,
+        "prefetchesIssued": 366,
+        "prefetchesUseful": 108,
+        "prefetchesWasted": 258,
+        "prefetchesPending": 0,
+        "segmentOracleHitRate": 0.50465116
+      }
+    }
+  ]
+}
