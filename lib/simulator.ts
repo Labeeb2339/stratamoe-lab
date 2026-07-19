@@ -27,8 +27,7 @@ export type TraceConfig = Pick<
   "scenario" | "seed" | "tokens" | "layers" | "expertsPerLayer" | "topK"
 >;
 
-export interface RouterTrace {
-  version: 1;
+interface RouterTraceFields {
   scenario: ScenarioId;
   seed: number;
   tokens: number;
@@ -38,6 +37,67 @@ export interface RouterTrace {
   /** selections[token][layer] contains exact expert indexes selected by the router. */
   selections: number[][][];
 }
+
+/** Serialized by StrataMoE Lab before trace provenance was recorded. */
+export interface RouterTraceV1 extends RouterTraceFields {
+  version: 1;
+}
+
+export interface SyntheticRouterTraceSource {
+  kind: "synthetic";
+  /** Identifies the generator without implying that model weights were executed. */
+  generator: string;
+}
+
+export interface DatasetTraceWorkload {
+  kind: "dataset";
+  datasetId: string;
+  split: string;
+  /** Ordered identifiers; prompt text is intentionally excluded from the trace. */
+  exampleIds: string[];
+}
+
+export interface PromptManifestTraceWorkload {
+  kind: "prompt-manifest";
+  /** SHA-256 of an external, ordered prompt manifest. */
+  sha256: string;
+}
+
+export interface CapturedRouterTraceSource {
+  kind: "captured";
+  model: {
+    id: string;
+    /** Immutable 40- or 64-hex model commit/content revision. */
+    revision: string;
+  };
+  tokenizer: {
+    /** Immutable 40- or 64-hex tokenizer commit/content revision. */
+    revision: string;
+  };
+  software: {
+    transformersVersion: string;
+    pytorchVersion: string;
+  };
+  workload: DatasetTraceWorkload | PromptManifestTraceWorkload;
+  capture: {
+    seed: number;
+    device: string;
+    dtype: string;
+  };
+}
+
+export type RouterTraceSource =
+  | SyntheticRouterTraceSource
+  | CapturedRouterTraceSource;
+
+/** Canonical trace schema. Importing a v1 trace migrates it to this shape. */
+export interface RouterTraceV2 extends RouterTraceFields {
+  version: 2;
+  source: RouterTraceSource;
+}
+
+/** Public input type retains serialized v1 compatibility. Outputs are canonical v2. */
+export type RouterTrace = RouterTraceV1 | RouterTraceV2;
 
 export interface TraceDiagnostics {
   totalExpertSelections: number;
@@ -110,7 +170,7 @@ export interface TierResidency {
 export interface SimulationResult {
   policy: PolicyId;
   config: SimulationConfig;
-  trace: RouterTrace;
+  trace: RouterTraceV2;
   traceFingerprint: string;
   traceDiagnostics: TraceDiagnostics;
   metrics: SimulationMetrics;
@@ -196,8 +256,13 @@ export const SIMULATION_LIMITS = Object.freeze({
 
 const POLICY_SET = new Set<string>(POLICY_IDS);
 const SCENARIO_SET = new Set<string>(SCENARIO_IDS);
-const TRACE_VERSION = 1 as const;
+const TRACE_VERSION = 2 as const;
+const LEGACY_TRACE_VERSION = 1 as const;
+const SYNTHETIC_GENERATOR = "stratamoe-lab/router-trace-v2";
+const LEGACY_SYNTHETIC_GENERATOR = "stratamoe-lab/legacy-v1-import";
 const MEGABYTE = 1_000_000;
+const IMMUTABLE_REVISION_PATTERN = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
+const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 
 function assertRecord(value: unknown, label: string): asserts value is Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -216,6 +281,38 @@ function assertInteger(value: unknown, label: string, minimum: number): asserts 
   if (!Number.isSafeInteger(value) || value < minimum) {
     throw new RangeError(`${label} must be an integer greater than or equal to ${minimum}.`);
   }
+}
+
+function validatedString(value: unknown, label: string, maximum = 512): string {
+  if (typeof value !== "string" || value.length === 0 || value.trim() !== value) {
+    throw new TypeError(`${label} must be a non-empty string without surrounding whitespace.`);
+  }
+  if (value.length > maximum) {
+    throw new RangeError(`${label} must be no longer than ${maximum} characters.`);
+  }
+  return value;
+}
+
+function assertAllowedKeys(
+  value: Record<string, unknown>,
+  label: string,
+  allowed: readonly string[],
+): void {
+  const allowedSet = new Set(allowed);
+  const unknown = Object.keys(value).filter((key) => !allowedSet.has(key));
+  if (unknown.length > 0) {
+    throw new TypeError(`${label} contains unsupported field(s): ${unknown.join(", ")}.`);
+  }
+}
+
+function validatedImmutableRevision(value: unknown, label: string): string {
+  const revision = validatedString(value, label, 64);
+  if (!IMMUTABLE_REVISION_PATTERN.test(revision)) {
+    throw new RangeError(
+      `${label} must be an immutable lowercase 40- or 64-character hexadecimal revision.`,
+    );
+  }
+  return revision;
 }
 
 function assertPositive(value: unknown, label: string): asserts value is number {
@@ -434,7 +531,7 @@ function domainShiftSelection(
   );
 }
 
-export function generateRouterTrace(input: TraceConfig): RouterTrace {
+export function generateRouterTrace(input: TraceConfig): RouterTraceV2 {
   const config = validateTraceDescriptor(input);
   const random = createRandom(config.seed);
   const allExperts = range(0, config.expertsPerLayer);
@@ -491,6 +588,10 @@ export function generateRouterTrace(input: TraceConfig): RouterTrace {
 
   return {
     version: TRACE_VERSION,
+    source: {
+      kind: "synthetic",
+      generator: SYNTHETIC_GENERATOR,
+    },
     scenario: config.scenario,
     seed: config.seed,
     tokens: config.tokens,
@@ -501,13 +602,170 @@ export function generateRouterTrace(input: TraceConfig): RouterTrace {
   };
 }
 
+function validateRouterTraceSource(
+  value: unknown,
+  traceSeed: number,
+): RouterTraceSource {
+  assertRecord(value, "Router trace source");
+
+  if (value.kind === "synthetic") {
+    assertAllowedKeys(value, "Synthetic router trace source", ["kind", "generator"]);
+    return {
+      kind: "synthetic",
+      generator: validatedString(
+        value.generator,
+        "Synthetic router trace source generator",
+      ),
+    };
+  }
+
+  if (value.kind !== "captured") {
+    throw new RangeError("Router trace source kind must be synthetic or captured.");
+  }
+
+  assertAllowedKeys(value, "Captured router trace source", [
+    "kind",
+    "model",
+    "tokenizer",
+    "software",
+    "workload",
+    "capture",
+  ]);
+
+  assertRecord(value.model, "Captured router trace model");
+  assertAllowedKeys(value.model, "Captured router trace model", ["id", "revision"]);
+  const model = {
+    id: validatedString(value.model.id, "Captured router trace model id"),
+    revision: validatedImmutableRevision(
+      value.model.revision,
+      "Captured router trace model revision",
+    ),
+  };
+
+  assertRecord(value.tokenizer, "Captured router trace tokenizer");
+  assertAllowedKeys(value.tokenizer, "Captured router trace tokenizer", ["revision"]);
+  const tokenizer = {
+    revision: validatedImmutableRevision(
+      value.tokenizer.revision,
+      "Captured router trace tokenizer revision",
+    ),
+  };
+
+  assertRecord(value.software, "Captured router trace software");
+  assertAllowedKeys(value.software, "Captured router trace software", [
+    "transformersVersion",
+    "pytorchVersion",
+  ]);
+  const software = {
+    transformersVersion: validatedString(
+      value.software.transformersVersion,
+      "Captured router trace Transformers version",
+      128,
+    ),
+    pytorchVersion: validatedString(
+      value.software.pytorchVersion,
+      "Captured router trace PyTorch version",
+      128,
+    ),
+  };
+
+  assertRecord(value.workload, "Captured router trace workload");
+  let workload: DatasetTraceWorkload | PromptManifestTraceWorkload;
+  if (value.workload.kind === "dataset") {
+    assertAllowedKeys(value.workload, "Captured dataset workload", [
+      "kind",
+      "datasetId",
+      "split",
+      "exampleIds",
+    ]);
+    if (!Array.isArray(value.workload.exampleIds) || value.workload.exampleIds.length === 0) {
+      throw new RangeError(
+        "Captured dataset workload exampleIds must be a non-empty ordered array.",
+      );
+    }
+    if (value.workload.exampleIds.length > SIMULATION_LIMITS.maxTokens) {
+      throw new RangeError(
+        `Captured dataset workload exampleIds cannot exceed ${SIMULATION_LIMITS.maxTokens} entries.`,
+      );
+    }
+    workload = {
+      kind: "dataset",
+      datasetId: validatedString(
+        value.workload.datasetId,
+        "Captured dataset workload datasetId",
+      ),
+      split: validatedString(value.workload.split, "Captured dataset workload split", 128),
+      exampleIds: value.workload.exampleIds.map((exampleId, index) =>
+        validatedString(
+          exampleId,
+          `Captured dataset workload exampleIds[${index}]`,
+        ),
+      ),
+    };
+  } else if (value.workload.kind === "prompt-manifest") {
+    assertAllowedKeys(value.workload, "Captured prompt-manifest workload", [
+      "kind",
+      "sha256",
+    ]);
+    const sha256 = validatedString(
+      value.workload.sha256,
+      "Captured prompt-manifest workload sha256",
+      64,
+    );
+    if (!SHA256_PATTERN.test(sha256)) {
+      throw new RangeError(
+        "Captured prompt-manifest workload sha256 must be a lowercase 64-character hexadecimal digest.",
+      );
+    }
+    workload = { kind: "prompt-manifest", sha256 };
+  } else {
+    throw new RangeError(
+      "Captured router trace workload kind must be dataset or prompt-manifest.",
+    );
+  }
+
+  assertRecord(value.capture, "Captured router trace capture");
+  assertAllowedKeys(value.capture, "Captured router trace capture", [
+    "seed",
+    "device",
+    "dtype",
+  ]);
+  assertInteger(value.capture.seed, "Captured router trace capture seed", 0);
+  if (value.capture.seed > 0xffff_ffff) {
+    throw new RangeError(
+      "Captured router trace capture seed must be no greater than 4294967295.",
+    );
+  }
+  if (value.capture.seed !== traceSeed) {
+    throw new RangeError(
+      `Captured router trace capture seed (${value.capture.seed}) must match trace seed (${traceSeed}).`,
+    );
+  }
+  const capture = {
+    seed: value.capture.seed,
+    device: validatedString(value.capture.device, "Captured router trace capture device", 128),
+    dtype: validatedString(value.capture.dtype, "Captured router trace capture dtype", 128),
+  };
+
+  return {
+    kind: "captured",
+    model,
+    tokenizer,
+    software,
+    workload,
+    capture,
+  };
+}
+
 export function validateRouterTrace(
   value: unknown,
   expected?: Partial<TraceConfig>,
-): RouterTrace {
+): RouterTraceV2 {
   assertRecord(value, "Router trace");
-  if (value.version !== TRACE_VERSION) {
-    throw new RangeError(`Router trace version must be ${TRACE_VERSION}.`);
+  if (value.version !== TRACE_VERSION && value.version !== LEGACY_TRACE_VERSION) {
+    throw new RangeError(
+      `Router trace version must be ${LEGACY_TRACE_VERSION} or ${TRACE_VERSION}.`,
+    );
   }
   if (typeof value.scenario !== "string" || !SCENARIO_SET.has(value.scenario)) {
     throw new RangeError(`Router trace scenario must be one of: ${SCENARIO_IDS.join(", ")}.`);
@@ -567,8 +825,17 @@ export function validateRouterTrace(
     });
   });
 
-  const trace: RouterTrace = {
+  const source: RouterTraceSource =
+    value.version === LEGACY_TRACE_VERSION
+      ? {
+          kind: "synthetic",
+          generator: LEGACY_SYNTHETIC_GENERATOR,
+        }
+      : validateRouterTraceSource(value.source, value.seed);
+
+  const trace: RouterTraceV2 = {
     version: TRACE_VERSION,
+    source,
     scenario: value.scenario as ScenarioId,
     seed: value.seed,
     tokens,
@@ -606,7 +873,7 @@ export function exportRouterTrace(trace: RouterTrace): string {
 export function importRouterTrace(
   serialized: string,
   expected?: Partial<TraceConfig>,
-): RouterTrace {
+): RouterTraceV2 {
   if (typeof serialized !== "string") {
     throw new TypeError("Serialized router trace must be a string.");
   }

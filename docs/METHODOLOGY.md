@@ -22,6 +22,8 @@ These names describe generator behavior. In particular, `domain shift` is not ev
 
 Trace generation must be deterministic for a fixed configuration and seed. Exported JSON should contain enough configuration and routing data to replay the same selected experts under every policy.
 
+[RouterTrace v2](ROUTER_TRACE_SCHEMA.md) makes the source claim explicit. Synthetic traces name their generator. Captured traces pin immutable model and tokenizer revisions, Transformers and PyTorch versions, capture seed/device/dtype, and either ordered dataset example IDs or a prompt-manifest SHA-256. All provenance participates in the trace fingerprint. A v1 import is replayable but is marked as synthetic because its original source cannot be established retrospectively.
+
 The public experiment surface controls `tokens`, `layers`, `expertsPerLayer`, `topK`, `gpuSlots`, `ramSlots`, `expertSizeMB`, `pcieGBps`, `nvmeGBps`, `computeMsPerToken`, and `seed`. Capacity is expressed in expert slots in the first simulator; transfer cost is derived from the fixed expert size. Invalid combinations such as `topK > expertsPerLayer` or capacities that cannot represent the documented tier behavior should fail validation rather than being silently repaired.
 
 An imported trace should be rejected if expert IDs, layer indexes, token count, or model-shape metadata are inconsistent. Import must not regenerate or reorder expert selections.
@@ -153,7 +155,7 @@ The next validation stage is trace replay before full runtime integration:
 
 1. Instrument an open MoE implementation to record router-selected expert IDs without modifying routing.
 2. Collect traces from multiple models, prompt domains, decoding lengths, and request-order schedules.
-3. Publish only redistributable trace metadata or anonymized expert IDs; do not publish private prompts.
+3. Write RouterTrace v2 captured provenance and publish only redistributable trace metadata or anonymized expert IDs; do not publish private prompts.
 4. Replay the real traces through every baseline using identical tier configurations.
 5. Add DALI-style window scoring, MoE-Infinity-style activation-pattern matching, and Colibrì-style LFRU as stronger baselines where faithfully reproducible.
 6. Only then integrate candidate placement logic into a real runtime and measure bytes, cache residency, PCIe/NVMe traffic, TTFT, TPOT, and energy on named hardware.

@@ -12,7 +12,7 @@
 
    > Every policy receives the exact same router-selected experts. LRU uses recency, LFU uses accumulated frequency, and ShiftCache uses a short-versus-long Jensen-Shannon divergence signal plus recent transitions to adapt after the workload changes. The policy is only allowed to move expert weights; it cannot change routing.
 
-4. Point to the trace fingerprint `e5f913fa` and the fixed result:
+4. Point to the provenance-bearing RouterTrace v2 fingerprint `d860285d` and the fixed result:
 
    > On this one synthetic regression trace, ShiftCache moves 264 million modeled link bytes per token versus 282.67 million for LRU, which is 6.60% lower. Its modeled transfer stall is 5.36% lower. All three policies report zero semantic routing changes.
 

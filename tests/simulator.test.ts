@@ -15,8 +15,10 @@ import {
   runSimulation,
   validateRouterTrace,
   validateSimulationConfig,
+  type CapturedRouterTraceSource,
   type ComparisonConfig,
   type RouterTrace,
+  type RouterTraceV2,
   type SimulationConfig,
   type SimulationResult,
 } from "../lib/simulator";
@@ -123,6 +125,11 @@ test("router trace generation and JSON round-trip are deterministic", () => {
   assert.equal(exportRouterTrace(first), exportRouterTrace(second));
   assert.deepEqual(importRouterTrace(exportRouterTrace(first)), first);
   assert.equal(fingerprintRouterTrace(first), fingerprintRouterTrace(second));
+  assert.equal(first.version, 2);
+  assert.deepEqual(first.source, {
+    kind: "synthetic",
+    generator: "stratamoe-lab/router-trace-v2",
+  });
 });
 
 test("different seeds produce different deterministic traces", () => {
@@ -133,9 +140,33 @@ test("different seeds produce different deterministic traces", () => {
   assert.notDeepEqual(first.selections, second.selections);
 });
 
-test("trace fingerprints include all scalar bits and scenario metadata", () => {
-  const base: RouterTrace = {
-    version: 1,
+test("trace fingerprints include scalar fields, selections, and provenance", () => {
+  const source: CapturedRouterTraceSource = {
+    kind: "captured",
+    model: {
+      id: "allenai/OLMoE-1B-7B-0924-Instruct",
+      revision: "a".repeat(40),
+    },
+    tokenizer: { revision: "b".repeat(40) },
+    software: {
+      transformersVersion: "4.55.2",
+      pytorchVersion: "2.8.0+cu128",
+    },
+    workload: {
+      kind: "dataset",
+      datasetId: "openai/gsm8k",
+      split: "test",
+      exampleIds: ["17"],
+    },
+    capture: {
+      seed: 0,
+      device: "cuda:0",
+      dtype: "torch.bfloat16",
+    },
+  };
+  const base: RouterTraceV2 = {
+    version: 2,
+    source,
     scenario: "steady",
     seed: 0,
     tokens: 1,
@@ -146,11 +177,186 @@ test("trace fingerprints include all scalar bits and scenario metadata", () => {
   };
   assert.notEqual(
     fingerprintRouterTrace(base),
-    fingerprintRouterTrace({ ...base, seed: 65_536 }),
+    fingerprintRouterTrace({
+      ...base,
+      seed: 65_536,
+      source: {
+        ...source,
+        capture: { ...source.capture, seed: 65_536 },
+      },
+    }),
+  );
+  assert.notEqual(
+    fingerprintRouterTrace(base),
+    fingerprintRouterTrace({
+      ...base,
+      source: {
+        ...source,
+        software: { ...source.software, pytorchVersion: "2.9.0" },
+      },
+    }),
   );
   assert.notEqual(
     fingerprintRouterTrace(base),
     fingerprintRouterTrace({ ...base, scenario: "domain-shift" }),
+  );
+  assert.notEqual(
+    fingerprintRouterTrace(base),
+    fingerprintRouterTrace({
+      ...base,
+      source: {
+        ...source,
+        model: { ...source.model, revision: "c".repeat(40) },
+      },
+    }),
+  );
+  assert.notEqual(
+    fingerprintRouterTrace(base),
+    fingerprintRouterTrace({
+      ...base,
+      source: {
+        ...source,
+        workload: {
+          kind: "dataset",
+          datasetId: "openai/gsm8k",
+          split: "test",
+          exampleIds: ["18"],
+        },
+      },
+    }),
+  );
+});
+
+test("v1 imports migrate conservatively to canonical v2 provenance", () => {
+  const legacy: RouterTrace = {
+    version: 1,
+    scenario: "steady",
+    seed: 23,
+    tokens: 2,
+    layers: 1,
+    expertsPerLayer: 2,
+    topK: 1,
+    selections: [[[0]], [[1]]],
+  };
+
+  const migrated = importRouterTrace(JSON.stringify(legacy));
+  assert.equal(migrated.version, 2);
+  assert.deepEqual(migrated.source, {
+    kind: "synthetic",
+    generator: "stratamoe-lab/legacy-v1-import",
+  });
+  assert.deepEqual(migrated.selections, legacy.selections);
+  assert.equal(JSON.parse(exportRouterTrace(legacy)).version, 2);
+  assert.deepEqual(validateRouterTrace(legacy), migrated);
+});
+
+test("captured trace provenance supports dataset IDs or a prompt-manifest digest", () => {
+  const generated = generateRouterTrace(
+    traceConfig(comparisonConfig({ tokens: 2, layers: 1, seed: 31 })),
+  );
+  const source: CapturedRouterTraceSource = {
+    kind: "captured",
+    model: {
+      id: "allenai/OLMoE-1B-7B-0924-Instruct",
+      revision: "1".repeat(40),
+    },
+    tokenizer: { revision: "2".repeat(40) },
+    software: {
+      transformersVersion: "4.55.2",
+      pytorchVersion: "2.8.0+cu128",
+    },
+    workload: {
+      kind: "dataset",
+      datasetId: "Salesforce/wikitext",
+      split: "test",
+      exampleIds: ["0", "1"],
+    },
+    capture: {
+      seed: generated.seed,
+      device: "cuda:0",
+      dtype: "torch.bfloat16",
+    },
+  };
+  const captured: RouterTraceV2 = { ...generated, source };
+
+  assert.deepEqual(importRouterTrace(exportRouterTrace(captured)), captured);
+
+  const manifestTrace: RouterTraceV2 = {
+    ...captured,
+    source: {
+      ...source,
+      workload: {
+        kind: "prompt-manifest",
+        sha256: "3".repeat(64),
+      },
+    },
+  };
+  assert.deepEqual(validateRouterTrace(manifestTrace), manifestTrace);
+  assert.notEqual(
+    fingerprintRouterTrace(captured),
+    fingerprintRouterTrace(manifestTrace),
+  );
+});
+
+test("captured trace validation rejects mutable or incomplete provenance", () => {
+  const generated = generateRouterTrace(
+    traceConfig(comparisonConfig({ tokens: 2, layers: 1, seed: 41 })),
+  );
+  const source = {
+    kind: "captured",
+    model: { id: "Qwen/Qwen1.5-MoE-A2.7B-Chat", revision: "a".repeat(40) },
+    tokenizer: { revision: "b".repeat(40) },
+    software: { transformersVersion: "4.55.2", pytorchVersion: "2.8.0" },
+    workload: {
+      kind: "prompt-manifest",
+      sha256: "c".repeat(64),
+    },
+    capture: { seed: generated.seed, device: "cpu", dtype: "torch.float32" },
+  } as const;
+  const captured = { ...generated, source };
+
+  assert.throws(
+    () => validateRouterTrace({ ...generated, source: undefined }),
+    /source must be an object/,
+  );
+  assert.throws(
+    () => validateRouterTrace({ ...captured, source: { ...source, model: { ...source.model, revision: "main" } } }),
+    /immutable lowercase/,
+  );
+  assert.throws(
+    () => validateRouterTrace({ ...captured, source: { ...source, capture: { ...source.capture, seed: 42 } } }),
+    /must match trace seed/,
+  );
+  assert.throws(
+    () => validateRouterTrace({ ...captured, source: { ...source, workload: { kind: "prompt-manifest", sha256: "D".repeat(64) } } }),
+    /lowercase 64-character/,
+  );
+  assert.throws(
+    () => validateRouterTrace({ ...captured, source: { ...source, undocumented: true } }),
+    /unsupported field/,
+  );
+  assert.throws(
+    () => validateRouterTrace({ ...captured, source: { ...source, software: { ...source.software, pytorchVersion: "" } } }),
+    /non-empty string/,
+  );
+  assert.throws(
+    () => validateRouterTrace({
+      ...captured,
+      source: {
+        ...source,
+        workload: {
+          kind: "dataset",
+          datasetId: "openai/gsm8k",
+          split: "test",
+          exampleIds: [],
+        },
+      },
+    }),
+    /exampleIds must be a non-empty ordered array/,
+  );
+  assert.throws(
+    () => validateRouterTrace({ ...generated, version: 3 }),
+    /version must be 1 or 2/,
   );
 });
 
@@ -331,8 +537,12 @@ test("a supplied router trace is preserved verbatim", () => {
     gpuSlots: 2,
     ramSlots: 1,
   });
-  const trace: RouterTrace = {
-    version: 1,
+  const trace: RouterTraceV2 = {
+    version: 2,
+    source: {
+      kind: "synthetic",
+      generator: "tests/hand-authored",
+    },
     scenario: "steady",
     seed: config.seed,
     tokens: 8,

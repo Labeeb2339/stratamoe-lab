@@ -65,7 +65,7 @@ Using the same expert ID at a lower precision is not automatically semantically 
 
 ## Security and privacy
 
-Imported traces should contain expert IDs and minimal metadata, not prompts, generated private text, credentials, or proprietary model artifacts. Router traces may still reveal workload structure, so real-trace releases need a privacy review and clear dataset/model licenses.
+Imported traces should contain expert IDs and the minimal RouterTrace v2 provenance fields, not prompts, generated private text, credentials, or proprietary model artifacts. A prompt manifest is referenced by SHA-256 rather than embedded. Router traces may still reveal workload structure, so real-trace releases need a privacy review and clear dataset/model licenses. The compact trace fingerprint is a reproducibility label, not a cryptographic integrity or authenticity proof.
 
 The simulator is not a security, compliance, or capacity-planning tool.
 

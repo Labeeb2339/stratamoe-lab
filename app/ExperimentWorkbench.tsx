@@ -291,7 +291,7 @@ export function ExperimentWorkbench() {
         <aside className="boundary-card" aria-label="Simulation boundary">
           <div className="boundary-heading"><span className="boundary-dot" aria-hidden="true" /> Simulation boundary</div>
           <strong>No model weights are executed.</strong>
-          <p>The harness replays one deterministic synthetic router trace for every policy. Transfer time is estimated; selected experts never change.</p>
+          <p>The harness replays one deterministic generated or imported router trace for every policy. Transfer time is estimated; selected experts never change.</p>
           <div className="boundary-proof"><span>Required invariant</span><b>0 semantic routing changes</b></div>
         </aside>
       </section>
@@ -349,7 +349,7 @@ export function ExperimentWorkbench() {
               <div><span>Current trace</span><b>{scenario.label}</b></div>
               <p>{scenario.description}</p>
               <div className="trace-facts" aria-label="Current trace configuration">
-                <span>{committed.tokens} tokens</span><span>{committed.layers} layers</span><span>{committed.expertsPerLayer} experts/layer</span><span>top-{committed.topK}</span>
+                <span>{selectedResult?.trace.source.kind ?? "synthetic"} source</span><span>{committed.tokens} tokens</span><span>{committed.layers} layers</span><span>{committed.expertsPerLayer} experts/layer</span><span>top-{committed.topK}</span>
               </div>
             </div>
             <div className="policy-cards" aria-label="Policy comparison summary">
@@ -470,7 +470,7 @@ export function ExperimentWorkbench() {
           <p>StrataMoE isolates weight movement from model quality. It is built to expose assumptions, replay exact traces, and make policy comparisons reproducible.</p>
         </div>
         <div className="methodology-grid">
-          <article><span>01 / Trace</span><h3>One deterministic route</h3><p>Every policy sees the same seeded scenario, token order, and selected experts.</p></article>
+          <article><span>01 / Trace</span><h3>One deterministic route</h3><p>Every policy sees the same provenance-bearing trace, token order, and selected experts.</p></article>
           <article><span>02 / Shift signal</span><h3>Short vs. long windows</h3><p>ShiftCache uses Jensen–Shannon divergence to detect changes in expert demand.</p></article>
           <article><span>03 / Accounting</span><h3>Bytes become stall estimates</h3><p>GPU, PCIe, and NVMe events are counted, then divided by configured bandwidth.</p></article>
           <article><span>04 / Hard boundary</span><h3>No silent semantic trade-off</h3><p>Prefetching may move exact weights earlier. It cannot alter the router trace or precision.</p></article>
