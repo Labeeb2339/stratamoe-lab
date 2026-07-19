@@ -104,6 +104,7 @@ When reporting a result, include:
 - [Related work](docs/RELATED_WORK.md) — primary papers and official repositories, including work from Chinese universities and labs
 - [Limitations](docs/LIMITATIONS.md) — what the simulator cannot support as a claim
 - [Captured Switch-Base-8 trace](docs/CAPTURED_SWITCH_TRACE.md) — pinned model execution, provenance, reproduction, and replay boundary
+- [ShiftQ-MoE research plan](docs/SHIFTQ_MOE_RESEARCH_PLAN.md) — closest prior work, candidate method, baselines, ablations, and strict go/no-go gates
 - [Two-minute outreach demo](docs/OUTREACH_DEMO.md) — an honest walkthrough and ask for the 2026-07-21 call
 
 [RouterTrace v2 schema](docs/ROUTER_TRACE_SCHEMA.md) documents synthetic/captured provenance, validation, privacy, and v1 migration.
@@ -113,7 +114,7 @@ When reporting a result, include:
 1. **Trace harness:** deterministic synthetic traces, inspection UI, fixed regression benchmark, and honest modeled metrics.
 2. **Real-trace replay:** collect router IDs from multiple open MoE families and compare stronger activation-aware baselines.
 3. **Runtime validation:** integrate a frozen policy into one open runtime and measure actual traffic, TTFT, TPOT, and energy on named hardware.
-4. **Precision study:** only after the placement result is understood, test variable precision with expert-balanced calibration and per-expert quality evidence informed by [MoEQuant](https://proceedings.mlr.press/v267/chen25aa.html), [MxMoE](https://proceedings.mlr.press/v267/duanmu25a.html), and [HOBBIT](https://arxiv.org/abs/2411.01433).
+4. **Precision study:** only after the placement result is understood, test the falsifiable [ShiftQ-MoE research plan](docs/SHIFTQ_MOE_RESEARCH_PLAN.md) with expert-balanced calibration, per-expert quality evidence, close baselines, and preregistered failure gates.
 
 The source code is licensed under the [Apache License 2.0](LICENSE).
 
