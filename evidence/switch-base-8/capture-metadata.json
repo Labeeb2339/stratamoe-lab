@@ -1,0 +1,171 @@
+{
+  "determinism": {
+    "in_process_repeats": 2,
+    "matched": true
+  },
+  "environment": {
+    "device": "cpu",
+    "huggingface_hub": "0.36.2",
+    "model_dtype": "torch.float32",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.15",
+    "router_logits_dtype": "torch.float32",
+    "sentencepiece": "0.2.1",
+    "tokenizers": "0.22.2",
+    "torch": "2.7.1+cpu",
+    "torch_num_interop_threads": 1,
+    "torch_num_threads": 4,
+    "transformers": "4.57.1"
+  },
+  "experts_observed_per_layer": [
+    [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ]
+  ],
+  "padding_tokens_excluded": true,
+  "prompt_manifest_sha256": "ac50b43c66c8228f320324a83f58d1c94977b3de049f0b1cda06dd05da0a5141",
+  "prompt_spans": [
+    {
+      "id": "security-01",
+      "input_ids_sha256": "a26a918891cc27a193b57628f221d1ee2d63a0eaca84b02dc692571db83c5deb",
+      "non_padding_tokens": 21,
+      "token_end_exclusive": 21,
+      "token_start": 0
+    },
+    {
+      "id": "security-02",
+      "input_ids_sha256": "0d30c325cf6707c6916ff2875ad198ddbce60d1fd9dd9a2d7500614702b3469d",
+      "non_padding_tokens": 26,
+      "token_end_exclusive": 47,
+      "token_start": 21
+    },
+    {
+      "id": "security-03",
+      "input_ids_sha256": "4ad8b092e6b3a30ae2a6e22ea42f30a65b0a5caa6a5db216ba0d7bfe3f9a0625",
+      "non_padding_tokens": 17,
+      "token_end_exclusive": 64,
+      "token_start": 47
+    },
+    {
+      "id": "electronics-01",
+      "input_ids_sha256": "5c91a671797cebb7af6c2cb7b6e97af695adaa021bf02f975f7a9ae97d9b2f15",
+      "non_padding_tokens": 28,
+      "token_end_exclusive": 92,
+      "token_start": 64
+    },
+    {
+      "id": "electronics-02",
+      "input_ids_sha256": "ce5b47f155ae49e1905fb7a0626ba259db163a75fae2780374bdc1bd9721f544",
+      "non_padding_tokens": 19,
+      "token_end_exclusive": 111,
+      "token_start": 92
+    },
+    {
+      "id": "electronics-03",
+      "input_ids_sha256": "c689fbc55434f9c31a9b2061937721929e0daec5850bf95b795ff6106fe84cf3",
+      "non_padding_tokens": 16,
+      "token_end_exclusive": 127,
+      "token_start": 111
+    },
+    {
+      "id": "science-01",
+      "input_ids_sha256": "71ff38125db45d660f02425b245fa424fe6ffad12fe657ed4d577ff95aeaacde",
+      "non_padding_tokens": 19,
+      "token_end_exclusive": 146,
+      "token_start": 127
+    },
+    {
+      "id": "science-02",
+      "input_ids_sha256": "63ef7ee5c1034970e350dc9e5f7b19183ac7e69630a3ed68fc2f7b0352c03a12",
+      "non_padding_tokens": 21,
+      "token_end_exclusive": 167,
+      "token_start": 146
+    },
+    {
+      "id": "software-01",
+      "input_ids_sha256": "387c667fc1e6c95d25085d643fba91c9b263db7388f9102cb395592b59ecd508",
+      "non_padding_tokens": 25,
+      "token_end_exclusive": 192,
+      "token_start": 167
+    },
+    {
+      "id": "software-02",
+      "input_ids_sha256": "da3cf70e1fd8faff9dd91e7c09e174d9fe6f5e78bf9c69a143b1f63667694d26",
+      "non_padding_tokens": 23,
+      "token_end_exclusive": 215,
+      "token_start": 192
+    }
+  ],
+  "schema_version": 1,
+  "scope": "encoder sparse feed-forward layers",
+  "selection_basis": "argmax(raw_encoder_router_logits)",
+  "selections_sha256": "4510d2bbb7dfeb14cdf38786a581fe5d94a373648072876a76d359b9e691aa8b",
+  "sparse_encoder_block_indices": [
+    1,
+    3,
+    5,
+    7,
+    9,
+    11
+  ],
+  "special_tokens_included": true,
+  "trace_file": "router-trace.v2.json",
+  "trace_sha256": "63f4c131866f560999c95ec8cfcc8dcea4a0e7677553f2b02a35a0d709d4d175"
+}

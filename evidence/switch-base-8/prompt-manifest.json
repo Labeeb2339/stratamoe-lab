@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "description": "Small deterministic, non-private prompt set created for reproducible router-trace capture.",
+  "privacy": "Contains no personal, confidential, credential, or user-vault data.",
+  "prompts": [
+    {
+      "id": "security-01",
+      "text": "A security analyst compares a suspicious domain with trusted threat intelligence and records the evidence for review."
+    },
+    {
+      "id": "security-02",
+      "text": "The incident report lists a phishing attachment, a command interpreter, and a credential access attempt."
+    },
+    {
+      "id": "security-03",
+      "text": "A retrieval system should cite the source passage that supports each technical claim."
+    },
+    {
+      "id": "electronics-01",
+      "text": "An electronics student calculates a timer frequency, builds the circuit, and measures the waveform with an oscilloscope."
+    },
+    {
+      "id": "electronics-02",
+      "text": "A signed integer multiply accumulator is checked against a bit exact software reference model."
+    },
+    {
+      "id": "electronics-03",
+      "text": "The design report separates simulation results from synthesis estimates and physical measurements."
+    },
+    {
+      "id": "science-01",
+      "text": "A marine scientist records temperature, depth, location, and uncertainty before interpreting an observation."
+    },
+    {
+      "id": "science-02",
+      "text": "A controlled experiment changes one parameter at a time and repeats the measurement with the same procedure."
+    },
+    {
+      "id": "software-01",
+      "text": "A deterministic test uses fixed inputs, checks explicit invariants, and reports a reproducible failure."
+    },
+    {
+      "id": "software-02",
+      "text": "A safe local tool rejects path traversal, limits input size, and avoids overwriting existing files."
+    }
+  ]
+}
