@@ -8,6 +8,7 @@ import {
   importRouterTrace,
   runSimulation,
   type ComparisonConfig,
+  type SimulationMetrics,
 } from "../lib/simulator";
 
 const traceUrl = new URL(
@@ -24,6 +25,10 @@ const metadataUrl = new URL(
 );
 const comparisonUrl = new URL(
   "../evidence/switch-base-8/comparison.json",
+  import.meta.url,
+);
+const prefetchAblationUrl = new URL(
+  "../evidence/switch-base-8/prefetch-ablation.json",
   import.meta.url,
 );
 
@@ -120,4 +125,95 @@ test("every policy replays the captured selections verbatim", () => {
     assert.deepEqual(result.trace.selections, trace.selections);
     assert.equal(result.metrics.semanticRoutingChanges, 0);
   }
+});
+
+test("prefetch-disabled ShiftCache isolates speculative transfers", () => {
+  const trace = importRouterTrace(readFileSync(traceUrl, "utf8"));
+  const config = {
+    scenario: trace.scenario,
+    seed: trace.seed,
+    tokens: trace.tokens,
+    layers: trace.layers,
+    expertsPerLayer: trace.expertsPerLayer,
+    topK: trace.topK,
+    gpuSlots: 12,
+    ramSlots: 18,
+    expertSizeMB: 64,
+    pcieGBps: 24,
+    nvmeGBps: 7,
+    computeMsPerToken: 6,
+    policy: "shift-cache",
+  } as const;
+
+  const prefetchOn = runSimulation(config, trace);
+  const prefetchOff = runSimulation(config, trace, {
+    shiftCachePrefetch: false,
+  });
+
+  assert.equal(prefetchOn.controls.shiftCachePrefetch, true);
+  assert.equal(prefetchOff.controls.shiftCachePrefetch, false);
+  assert.ok(prefetchOn.metrics.prefetchesIssued > 0);
+  assert.equal(prefetchOff.metrics.prefetchesIssued, 0);
+  assert.equal(prefetchOff.metrics.prefetchBytesTransferred, 0);
+  assert.equal(
+    prefetchOff.metrics.detectedShifts,
+    prefetchOn.metrics.detectedShifts,
+  );
+  assert.deepEqual(prefetchOff.trace.selections, prefetchOn.trace.selections);
+  assert.equal(prefetchOff.metrics.semanticRoutingChanges, 0);
+});
+
+test("checked-in prefetch ablation preserves the captured result", () => {
+  const ablation = JSON.parse(readFileSync(prefetchAblationUrl, "utf8")) as {
+    traceSha256: string;
+    traceFingerprint: string;
+    winnerByModeledBytes: string;
+    config: ComparisonConfig;
+    variants: Array<{
+      id: string;
+      controls: { shiftCachePrefetch: boolean };
+      metrics: SimulationMetrics;
+    }>;
+    effectOfDisablingPrefetch: {
+      bytesPerToken: { percentChange: number };
+    };
+  };
+
+  assert.equal(
+    ablation.traceSha256,
+    createHash("sha256").update(readFileSync(traceUrl)).digest("hex"),
+  );
+  assert.equal(ablation.traceFingerprint, "f3b18fe2");
+  assert.equal(ablation.winnerByModeledBytes, "prefetch-off");
+
+  const variants = Object.fromEntries(
+    ablation.variants.map((variant) => [variant.id, variant]),
+  );
+  const trace = importRouterTrace(readFileSync(traceUrl, "utf8"));
+  const replayConfig = {
+    ...ablation.config,
+    policy: "shift-cache",
+  } as const;
+  assert.deepEqual(
+    variants["prefetch-on"].metrics,
+    runSimulation(replayConfig, trace).metrics,
+  );
+  assert.deepEqual(
+    variants["prefetch-off"].metrics,
+    runSimulation(replayConfig, trace, { shiftCachePrefetch: false }).metrics,
+  );
+  assert.equal(variants["prefetch-on"].controls.shiftCachePrefetch, true);
+  assert.equal(variants["prefetch-off"].controls.shiftCachePrefetch, false);
+  assert.equal(variants["prefetch-on"].metrics.bytesPerToken, 516762790.7);
+  assert.equal(variants["prefetch-off"].metrics.bytesPerToken, 411088372.09);
+  assert.equal(variants["prefetch-off"].metrics.prefetchesIssued, 0);
+  assert.equal(
+    variants["prefetch-off"].metrics.detectedShifts,
+    variants["prefetch-on"].metrics.detectedShifts,
+  );
+  assert.equal(
+    variants["prefetch-off"].metrics.semanticRoutingChanges,
+    0,
+  );
+  assert.equal(ablation.effectOfDisablingPrefetch.bytesPerToken.percentChange, -20.44930876);
 });

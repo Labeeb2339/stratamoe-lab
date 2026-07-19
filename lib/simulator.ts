@@ -20,6 +20,12 @@ export interface SimulationConfig {
   computeMsPerToken: number;
 }
 
+/** Mechanism-level controls used for ablations without inventing new policies. */
+export interface SimulationControls {
+  /** Only affects ShiftCache; baseline behavior keeps transition prefetch enabled. */
+  shiftCachePrefetch: boolean;
+}
+
 export type ComparisonConfig = Omit<SimulationConfig, "policy">;
 
 export type TraceConfig = Pick<
@@ -170,6 +176,7 @@ export interface TierResidency {
 export interface SimulationResult {
   policy: PolicyId;
   config: SimulationConfig;
+  controls: SimulationControls;
   trace: RouterTraceV2;
   traceFingerprint: string;
   traceDiagnostics: TraceDiagnostics;
@@ -233,6 +240,10 @@ export const DEFAULT_CONFIG: SimulationConfig = Object.freeze({
   pcieGBps: 24,
   nvmeGBps: 7,
   computeMsPerToken: 6,
+});
+
+export const DEFAULT_SIMULATION_CONTROLS: SimulationControls = Object.freeze({
+  shiftCachePrefetch: true,
 });
 
 /** Runtime limits protect browser/CLI callers before trace allocation begins. */
@@ -422,6 +433,17 @@ export function validateSimulationConfig(input: SimulationConfig): SimulationCon
   }
 
   return { ...input };
+}
+
+export function validateSimulationControls(
+  input: SimulationControls,
+): SimulationControls {
+  assertRecord(input, "Simulation controls");
+  assertAllowedKeys(input, "Simulation controls", ["shiftCachePrefetch"]);
+  if (typeof input.shiftCachePrefetch !== "boolean") {
+    throw new TypeError("shiftCachePrefetch must be a boolean.");
+  }
+  return { shiftCachePrefetch: input.shiftCachePrefetch };
 }
 
 function validateTraceDescriptor(input: TraceConfig): TraceConfig {
@@ -1143,9 +1165,11 @@ class HierarchySimulator {
   private previousLayers: string[][] | undefined;
   private clock = 0;
   private readonly config: SimulationConfig;
+  private readonly controls: SimulationControls;
 
-  constructor(config: SimulationConfig) {
+  constructor(config: SimulationConfig, controls: SimulationControls) {
     this.config = config;
+    this.controls = controls;
     this.shiftTracker = new ShiftTracker(config.tokens);
   }
 
@@ -1193,7 +1217,11 @@ class HierarchySimulator {
     const shift = this.shiftTracker.observe(flattened);
     if (this.previousLayers) this.learnTransitions(this.previousLayers, layerSelections);
     this.updatePredictions(layerSelections);
-    if (this.config.policy === "shift-cache" && hasNextToken) {
+    if (
+      this.config.policy === "shift-cache" &&
+      this.controls.shiftCachePrefetch &&
+      hasNextToken
+    ) {
       this.prefetchPredictions();
     }
     this.previousLayers = layerSelections.map((layer) => [...layer]);
@@ -1392,14 +1420,16 @@ function allExpertKeys(config: SimulationConfig): string[] {
 export function runSimulation(
   input: SimulationConfig,
   traceInput?: RouterTrace,
+  controlsInput: SimulationControls = DEFAULT_SIMULATION_CONTROLS,
 ): SimulationResult {
   const config = validateSimulationConfig(input);
+  const controls = validateSimulationControls(controlsInput);
   const expectedTrace = traceConfigFromSimulation(config);
   const trace = traceInput
     ? validateRouterTrace(traceInput, expectedTrace)
     : generateRouterTrace(expectedTrace);
   const traceDiagnostics = analyzeRouterTrace(trace, config.gpuSlots);
-  const simulator = new HierarchySimulator(config);
+  const simulator = new HierarchySimulator(config, controls);
   const timeline: TokenTimelinePoint[] = [];
 
   for (let token = 0; token < trace.tokens; token += 1) {
@@ -1455,6 +1485,7 @@ export function runSimulation(
   return {
     policy: config.policy,
     config,
+    controls,
     trace,
     traceFingerprint: fingerprintRouterTrace(trace),
     traceDiagnostics,

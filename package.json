@@ -16,6 +16,7 @@
     "test": "npm run test:unit && npm run test:render",
     "benchmark": "tsx scripts/run-benchmark.ts",
     "benchmark:captured": "tsx scripts/run-captured-benchmark.ts",
+    "benchmark:captured:prefetch": "tsx scripts/run-prefetch-ablation.ts",
     "check": "npm run lint && npm run typecheck && npm run test:unit && npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
