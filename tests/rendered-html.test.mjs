@@ -31,6 +31,8 @@ test("server-renders the StrataMoE research workbench", async () => {
   const html = await response.text();
   assert.match(html, /<title>StrataMoE Lab/i);
   assert.match(html, /Can a shift-aware cache move fewer expert bytes/i);
+  assert.match(html, /Detection passed\. Action safety did not\./i);
+  assert.match(html, /16 \/ 76/i);
   assert.match(html, /Configure once\. Compare all three policies\./i);
   assert.match(html, /A falsifiable simulator, not a hardware claim\./i);
   assert.match(html, /LRU/i);

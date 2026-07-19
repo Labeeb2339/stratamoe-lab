@@ -300,10 +300,19 @@ The strongest honest title for the completed placement experiment is:
 > **When Change Detection Is Not Enough: A Negative Control for JSD-Gated MoE
 > Expert Placement**
 
-## Candidate continuation: shift actionability study
+## Completed actionability pilot and remaining research gap
 
-This is a proposal, not a result and not yet a new benchmark. The next question
-is narrower than designing another detector:
+The first actionability protocol is now a result, but not a new benchmark. On
+30 untouched synthetic seeds across five GPU capacities, a causal 12-token
+shadow gate acted in 76 of 150 abrupt cells. It helped by a median 9.75% inside
+the preregistered oracle-actionable subset, but that subset existed only at one
+capacity. Sixteen executed actions were harmful (21.05%), and the worst cell
+regressed by 21.34%. The safety and coverage gates failed, so
+`carryForward = false`. See the [protocol](ACTIONABILITY_PROTOCOL.md) and
+[complete result](ACTIONABILITY_RESULTS.md).
+
+That negative pilot leaves a question narrower than designing another
+detector:
 
 > When does a correctly detected routing shift create enough placement headroom
 > to repay cache churn and migration cost?
@@ -313,7 +322,7 @@ Generic caching with switching costs, workload-aware MoE caching, and dynamic
 expert promotion already exist, so change detection or migration awareness alone
 cannot support a novelty claim.
 
-### Preregistered comparison matrix
+### Remaining real-trace comparison matrix
 
 Use fresh held-out causal-MoE router traces with stationary, abrupt `A -> B`,
 reversal `A -> B -> A`, gradual, and high-churn schedules. Cross each detector
@@ -352,5 +361,7 @@ clean-environment reproduction. A candidate action should also:
 - have a paired 95% confidence interval excluding zero; and
 - preserve semantic routing exactly.
 
-Until those gates pass, the defensible description is **a preregistered
-actionability experiment**, not a new method or a breakthrough.
+The synthetic v1 pilot did not pass its carry-forward gates. Until the broader
+real-trace gates pass on a separately frozen candidate, the defensible
+description is **a preregistered actionability experiment**, not a new method or
+a breakthrough.
