@@ -76,6 +76,35 @@ generalizes beyond its synthetic regression fixture. The next experiment must
 separate detector, reweighting, and prefetch effects and include a no-prefetch
 ablation before changing thresholds.
 
+## Prefetch-disabled control
+
+The first ablation changes exactly one simulator control: ShiftCache transition
+prefetch is disabled while its JSD detector, frequency/recency reweighting,
+transition retention score, trace, and memory configuration remain fixed.
+
+```bash
+npm run benchmark:captured:prefetch
+```
+
+| Variant | Modeled link bytes / token | Modeled transfer stall / token | GPU hit rate | NVMe miss rate |
+| --- | ---: | ---: | ---: | ---: |
+| Prefetch on | 516,762,790.70 B | 36.5023 ms | 32.33% | 32.40% |
+| Prefetch off | 411,088,372.09 B | 30.7739 ms | 28.06% | 35.12% |
+
+Disabling prefetch reduced modeled link bytes by **20.45%** and modeled
+transfer stall by **15.69%**, despite lowering GPU hit rate by 4.26 percentage
+points and increasing NVMe miss rate by 2.71 points. It removed 23.424 GB of
+prefetch transfers and reduced total modeled traffic by 22.720 GB over the 215
+token positions. Both variants detected the same three JSD threshold crossings
+and made zero semantic routing changes.
+
+This supports a narrow diagnosis: speculative prefetch traffic polluted this
+particular replay. It does not show that prefetch is generally harmful. The
+no-prefetch control still moved **15.08% more modeled bytes than LFU**, although
+it moved **1.92% fewer than LRU**. Detector, retention reweighting, and transition
+score ablations are still required. The machine-readable result is
+[`prefetch-ablation.json`](../evidence/switch-base-8/prefetch-ablation.json).
+
 The resulting `comparison.json` must be described as:
 
 > Router decisions captured from a real model; memory traffic, transfer stalls,

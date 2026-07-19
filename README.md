@@ -49,6 +49,13 @@ than LFU by modeled bytes** on this trace. Its transition prefetcher used only
 memory traffic and timing remain simulated. See the full [capture and replay
 record](docs/CAPTURED_SWITCH_TRACE.md).
 
+The first mechanism ablation keeps ShiftCache's detector and retention scoring
+fixed while disabling transition prefetch. On the same trace, modeled link
+bytes fell from `516,762,790.70` to `411,088,372.09` per token (**20.45%**),
+and modeled transfer stall fell **15.69%**. The no-prefetch control was still
+**15.08% worse than LFU**, so this result identifies prefetch pollution without
+establishing that the remaining ShiftCache policy is generally competitive.
+
 ## Why this experiment exists
 
 [Colibrì](https://github.com/JustVugg/colibri) demonstrates a real VRAM/RAM/storage hierarchy, per-layer caching, pinned hot experts, and live placement policies while preserving router semantics by default. [MoE-Infinity](https://arxiv.org/abs/2401.14361) studies request-level activation traces, predictive caching, and recovery after task or dataset shifts. [DALI](https://arxiv.org/abs/2602.03495) already proposes workload-aware cache replacement, and Colibrì now documents an LFRU-style live placement policy. Those systems make a broad “first workload-aware MoE cache” claim indefensible here.
@@ -78,6 +85,7 @@ Quality and experiment commands are declared in `package.json`:
 npm run check
 npm run benchmark
 npm run benchmark:captured
+npm run benchmark:captured:prefetch
 ```
 
 The dashboard lets you choose a scenario, seed, token count, model shape, cache capacity, expert size, and modeled bandwidths; run all policies; inspect per-token behavior and final tier residency; and export or import deterministic router traces.

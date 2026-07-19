@@ -1,0 +1,149 @@
+{
+  "benchmark": "switch-base-8-shiftcache-prefetch-ablation-v1",
+  "question": "What changes when transition prefetching is disabled while ShiftCache's detector and retention scoring stay unchanged?",
+  "evidenceBoundary": "Router selections came from a pinned model execution; memory traffic, stalls, and throughput remain simulated.",
+  "traceSha256": "63f4c131866f560999c95ec8cfcc8dcea4a0e7677553f2b02a35a0d709d4d175",
+  "traceFingerprint": "f3b18fe2",
+  "source": {
+    "kind": "captured",
+    "model": {
+      "id": "google/switch-base-8",
+      "revision": "92fe2d22b024d9937146fe097ba3d3a7ba146e1b"
+    },
+    "tokenizer": {
+      "revision": "92fe2d22b024d9937146fe097ba3d3a7ba146e1b"
+    },
+    "software": {
+      "transformersVersion": "4.57.1",
+      "pytorchVersion": "2.7.1+cpu"
+    },
+    "workload": {
+      "kind": "prompt-manifest",
+      "sha256": "ac50b43c66c8228f320324a83f58d1c94977b3de049f0b1cda06dd05da0a5141"
+    },
+    "capture": {
+      "seed": 2339,
+      "device": "cpu",
+      "dtype": "torch.float32"
+    }
+  },
+  "config": {
+    "scenario": "domain-shift",
+    "seed": 2339,
+    "tokens": 215,
+    "layers": 6,
+    "expertsPerLayer": 8,
+    "topK": 1,
+    "gpuSlots": 12,
+    "ramSlots": 18,
+    "expertSizeMB": 64,
+    "pcieGBps": 24,
+    "nvmeGBps": 7,
+    "computeMsPerToken": 6
+  },
+  "shiftCacheParameters": {
+    "minimumShortWindowTokens": 4,
+    "maximumShortWindowTokens": 12,
+    "longWindowMultiplier": 4,
+    "shiftThresholdBits": 0.28,
+    "rearmThresholdBits": 0.12,
+    "minimumTransitionObservations": 2,
+    "maximumPrefetchesPerToken": 2
+  },
+  "traceDiagnostics": {
+    "totalExpertSelections": 1290,
+    "uniqueExperts": 48,
+    "immediateReuseRate": 0.18224299,
+    "segmentTokens": 16,
+    "segmentOracleHitRate": 0.50465116
+  },
+  "variants": [
+    {
+      "id": "prefetch-on",
+      "controls": {
+        "shiftCachePrefetch": true
+      },
+      "metrics": {
+        "gpuHitRate": 0.32325581,
+        "ramHitRate": 0.35271318,
+        "nvmeMissRate": 0.32403101,
+        "bytesPerToken": 516762790.7,
+        "transferStallMsPerToken": 36.50232558,
+        "tokensPerSecond": 23.52812432,
+        "evictions": 1694,
+        "prefetchUsefulness": 0.29508197,
+        "detectedShifts": 3,
+        "semanticRoutingChanges": 0,
+        "totalAccesses": 1290,
+        "gpuHits": 417,
+        "ramHits": 455,
+        "nvmeMisses": 418,
+        "totalBytesTransferred": 111104000000,
+        "demandBytesTransferred": 55872000000,
+        "prefetchBytesTransferred": 23424000000,
+        "nvmeBytesRead": 31808000000,
+        "totalTransferStallMs": 7848,
+        "gpuEvictions": 1227,
+        "ramEvictions": 467,
+        "prefetchesIssued": 366,
+        "prefetchesUseful": 108,
+        "prefetchesWasted": 258,
+        "prefetchesPending": 0,
+        "segmentOracleHitRate": 0.50465116
+      }
+    },
+    {
+      "id": "prefetch-off",
+      "controls": {
+        "shiftCachePrefetch": false
+      },
+      "metrics": {
+        "gpuHitRate": 0.28062016,
+        "ramHitRate": 0.36821705,
+        "nvmeMissRate": 0.35116279,
+        "bytesPerToken": 411088372.09,
+        "transferStallMsPerToken": 30.77386489,
+        "tokensPerSecond": 27.19322548,
+        "evictions": 1339,
+        "prefetchUsefulness": 0,
+        "detectedShifts": 3,
+        "semanticRoutingChanges": 0,
+        "totalAccesses": 1290,
+        "gpuHits": 362,
+        "ramHits": 475,
+        "nvmeMisses": 453,
+        "totalBytesTransferred": 88384000000,
+        "demandBytesTransferred": 59392000000,
+        "prefetchBytesTransferred": 0,
+        "nvmeBytesRead": 28992000000,
+        "totalTransferStallMs": 6616.38095238,
+        "gpuEvictions": 916,
+        "ramEvictions": 423,
+        "prefetchesIssued": 0,
+        "prefetchesUseful": 0,
+        "prefetchesWasted": 0,
+        "prefetchesPending": 0,
+        "segmentOracleHitRate": 0.50465116
+      }
+    }
+  ],
+  "effectOfDisablingPrefetch": {
+    "bytesPerToken": {
+      "absoluteChange": -105674418.61,
+      "percentChange": -20.44930876
+    },
+    "transferStallMsPerToken": {
+      "absoluteChange": -5.72846069,
+      "percentChange": -15.69341295
+    },
+    "gpuHitRate": {
+      "absoluteChange": -0.04263565,
+      "percentChange": -13.18944584
+    },
+    "nvmeMissRate": {
+      "absoluteChange": 0.02713178,
+      "percentChange": 8.37320477
+    }
+  },
+  "winnerByModeledBytes": "prefetch-off"
+}

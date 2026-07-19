@@ -234,14 +234,18 @@ A synthetic StrataMoE result alone can never pass this gate.
 
 ## Immediate next experiment
 
-Do not implement mixed precision yet. First add a captured-trace ablation that
-replays:
+Do not implement mixed precision yet. The first captured-trace control now
+disables transition prefetch while keeping the rest of ShiftCache fixed. It
+reduced modeled link bytes by 20.45% on the pinned Switch-Base-8 trace, but the
+control remained 15.08% worse than LFU. This diagnoses prefetch pollution on
+one replay; it does not validate the detector or establish generality.
 
-1. LRU;
-2. LFU;
-3. recency/frequency reweighting without JSD;
-4. JSD reweighting without transition prefetch; and
-5. the current combined ShiftCache policy.
+The evidence bundle now contains LRU, LFU, the current combined ShiftCache
+policy, and the prefetch-disabled ShiftCache control. Continue the matrix with:
+
+1. recency/frequency reweighting without JSD;
+2. JSD reweighting without the transition retention score; and
+3. transition retention scoring without JSD-driven weights.
 
 The purpose is to identify whether the first captured failure came from the
 detector, the reweighting rule, or prefetch pollution. Only a stable detector

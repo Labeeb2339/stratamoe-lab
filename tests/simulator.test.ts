@@ -15,6 +15,7 @@ import {
   runSimulation,
   validateRouterTrace,
   validateSimulationConfig,
+  validateSimulationControls,
   type CapturedRouterTraceSource,
   type ComparisonConfig,
   type RouterTrace,
@@ -361,6 +362,21 @@ test("captured trace validation rejects mutable or incomplete provenance", () =>
 });
 
 test("config validation rejects unsafe or nonsensical settings", () => {
+  assert.deepEqual(validateSimulationControls({ shiftCachePrefetch: false }), {
+    shiftCachePrefetch: false,
+  });
+  assert.throws(
+    () => validateSimulationControls({ shiftCachePrefetch: "no" } as never),
+    /shiftCachePrefetch must be a boolean/,
+  );
+  assert.throws(
+    () =>
+      validateSimulationControls({
+        shiftCachePrefetch: true,
+        unsupported: true,
+      } as never),
+    /unsupported field.*unsupported/,
+  );
   assert.throws(
     () => validateSimulationConfig(simulationConfig({ topK: 17 })),
     /topK cannot exceed expertsPerLayer/,
