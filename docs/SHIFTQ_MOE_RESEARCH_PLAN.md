@@ -3,8 +3,9 @@
 **Working question:** Does router-distribution change detection improve
 mixed-precision expert residency under sequential workload shifts?
 
-**Status on 2026-07-19:** candidate research direction, not a claimed new
-algorithm, quantizer, thesis result, or performance improvement.
+**Status on 2026-07-19:** current JSD-gated design stopped after a
+preregistered traffic gate failed; not a claimed new algorithm, quantizer,
+thesis result, or performance improvement.
 
 ## Recommendation
 
@@ -253,15 +254,18 @@ LFU over the full replay. The JSD threshold crossings were at token positions
 and 167. This is negative evidence for the current continuous JSD reweighting
 rule on one short encoder trace.
 
-The implementation also exposed a terminology boundary: a threshold crossing
-is currently telemetry only. The eviction weights change continuously with the
-JSD score, so StrataMoE does not yet contain a change-triggered controller.
+That checkpoint also exposed a terminology boundary: its threshold crossing
+was telemetry only while the eviction weights changed continuously with the JSD
+score. The following preregistered control added a separate event-gated mode.
 
-The next preregistered control is therefore a detector sanity experiment, not
-quantization. Use seeds `2300` through `2329`, `1024` tokens, and otherwise the
-fixed default synthetic configuration for both stationary and abrupt-shift
-traces. Add explicit persistence and cooldown before observing the sweep. Carry
-JSD gating forward only if all of these provisional engineering gates pass:
+The next preregistered control was therefore a detector sanity experiment, not
+quantization. It used seeds `2300` through `2329`, `1024` tokens, and otherwise
+the fixed default synthetic configuration for both stationary and abrupt-shift
+traces. The public plan required persistence and cooldown before observing the
+sweep; the implementation then froze three-token persistence, a 64-token
+cooldown, and a fixed 64-token intervention before its first run. Those exact
+numeric implementation values were not in the earlier public commit. JSD gating
+could continue only if all of these provisional engineering gates passed:
 
 1. at least 27 of 30 abrupt shifts trigger within 64 tokens of the known change;
 2. stationary traces produce at most one false trigger per 10,000 tokens;
@@ -270,11 +274,24 @@ JSD gating forward only if all of these provisional engineering gates pass:
    below zero; and
 4. stationary whole-run modeled bytes regress by no more than 2%.
 
-These synthetic gates can reject a broken mechanism but cannot pass the real
-OLMoE detector gate or support a novelty claim. Only a stable detector and
-allocation signal should become the foundation for ShiftQ-MoE.
+The detector passed the timing controls: 30 of 30 shifts triggered after six
+tokens, with zero stationary false triggers. The intervention failed the
+traffic gate decisively. It increased first-64-token post-shift modeled link
+bytes by a median **11.52%**, with a paired-bootstrap 95% interval of
+**[+10.78%, +12.64%]**. Stationary traffic was unchanged.
 
-The strongest honest working title is:
+The registered outcome is `carryForward = false`. The current JSD-gated
+retention design stops here and must not be tuned on the same seeds. These
+synthetic gates can reject a broken mechanism but could never pass the real
+OLMoE detector gate or support a novelty claim.
 
-> **ShiftQ-MoE: Does Router-Distribution Change Detection Improve
-> Mixed-Precision Expert Residency?**
+Do not implement the proposed ShiftQ-MoE mixed-precision layer on top of this
+failed signal. A future quantization study should start separately with a static
+expert-sensitivity baseline, or preregister a materially different detector on
+new out-of-sample traces. It must not reuse the ShiftQ-MoE name as if this gate
+had passed.
+
+The strongest honest title for the completed placement experiment is:
+
+> **When Change Detection Is Not Enough: A Negative Control for JSD-Gated MoE
+> Expert Placement**

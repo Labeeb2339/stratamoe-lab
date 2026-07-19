@@ -1,0 +1,829 @@
+{
+  "benchmark": "synthetic-persistent-detector-sanity-v1",
+  "preregistration": {
+    "publicPlanCommit": "fe6042b6cd628d4976c2069a94d2739614ce9ce9",
+    "publicPlanPath": "docs/SHIFTQ_MOE_RESEARCH_PLAN.md",
+    "note": "Seed range, token count, persistence/cooldown requirement, and all four gates were merged before this sweep was executed."
+  },
+  "evidenceBoundary": "All traces in this sweep are deterministic synthetic fixtures with known generator boundaries. The result can reject a broken mechanism but cannot validate real semantic shifts, model quality, hardware performance, or ShiftQ-MoE novelty.",
+  "intervention": "After three consecutive JSD scores at or above the fixed threshold, use maximum short-window/recency reweighting for 64 tokens, then require cooldown and rearming. Prefetch and transition retention stay disabled in both arms.",
+  "configuration": {
+    "seeds": [
+      2300,
+      2301,
+      2302,
+      2303,
+      2304,
+      2305,
+      2306,
+      2307,
+      2308,
+      2309,
+      2310,
+      2311,
+      2312,
+      2313,
+      2314,
+      2315,
+      2316,
+      2317,
+      2318,
+      2319,
+      2320,
+      2321,
+      2322,
+      2323,
+      2324,
+      2325,
+      2326,
+      2327,
+      2328,
+      2329
+    ],
+    "tokens": 1024,
+    "knownShiftToken": 512,
+    "postShiftWindowTokens": 64,
+    "base": {
+      "layers": 8,
+      "expertsPerLayer": 16,
+      "topK": 2,
+      "gpuSlots": 32,
+      "ramSlots": 64,
+      "expertSizeMB": 64,
+      "pcieGBps": 24,
+      "nvmeGBps": 7,
+      "computeMsPerToken": 6
+    },
+    "shiftCacheParameters": {
+      "minimumShortWindowTokens": 4,
+      "maximumShortWindowTokens": 12,
+      "longWindowMultiplier": 4,
+      "shiftThresholdBits": 0.28,
+      "rearmThresholdBits": 0.12,
+      "minimumTransitionObservations": 2,
+      "maximumPrefetchesPerToken": 2,
+      "persistentThresholdTokens": 3,
+      "detectorCooldownTokens": 64,
+      "triggeredReweightingTokens": 64
+    },
+    "fixedControls": {
+      "shiftCachePrefetch": false,
+      "shiftCacheJsdReweighting": false,
+      "shiftCacheTransitionRetention": false,
+      "shiftCachePersistentDetector": true,
+      "shiftCacheTriggeredReweighting": false
+    },
+    "triggeredControls": {
+      "shiftCachePrefetch": false,
+      "shiftCacheJsdReweighting": false,
+      "shiftCacheTransitionRetention": false,
+      "shiftCachePersistentDetector": true,
+      "shiftCacheTriggeredReweighting": true
+    }
+  },
+  "analysis": {
+    "pairedUnit": "seed",
+    "postShiftMetric": "Percent change in total modeled link bytes across tokens 512 through 575, triggered versus fixed.",
+    "stationaryMetric": "Percent change in whole-run total modeled link bytes, triggered versus fixed.",
+    "bootstrapStatistic": "Median paired percent change.",
+    "bootstrap": {
+      "resamples": 10000,
+      "seed": 2339,
+      "lowerPercentile": 2.5,
+      "upperPercentile": 97.5,
+      "lower": 10.78035747,
+      "upper": 12.63942461
+    }
+  },
+  "records": [
+    {
+      "seed": 2300,
+      "domainShift": {
+        "traceFingerprint": "aeff2dc1",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 24960000000,
+        "triggeredPostShiftModeledLinkBytes": 28672000000,
+        "postShiftModeledLinkBytesPercentChange": 14.87179487
+      },
+      "steady": {
+        "traceFingerprint": "c3bd7d2d",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 612608000000,
+        "triggeredWholeRunModeledLinkBytes": 612608000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2301,
+      "domainShift": {
+        "traceFingerprint": "ce1b8e2a",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25920000000,
+        "triggeredPostShiftModeledLinkBytes": 28736000000,
+        "postShiftModeledLinkBytesPercentChange": 10.86419753
+      },
+      "steady": {
+        "traceFingerprint": "ff1f609a",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 615680000000,
+        "triggeredWholeRunModeledLinkBytes": 615680000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2302,
+      "domainShift": {
+        "traceFingerprint": "2c57f363",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25920000000,
+        "triggeredPostShiftModeledLinkBytes": 28544000000,
+        "postShiftModeledLinkBytesPercentChange": 10.12345679
+      },
+      "steady": {
+        "traceFingerprint": "b9ca967d",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 615552000000,
+        "triggeredWholeRunModeledLinkBytes": 615552000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2303,
+      "domainShift": {
+        "traceFingerprint": "14710323",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 26048000000,
+        "triggeredPostShiftModeledLinkBytes": 28736000000,
+        "postShiftModeledLinkBytesPercentChange": 10.31941032
+      },
+      "steady": {
+        "traceFingerprint": "8e14e88e",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 611584000000,
+        "triggeredWholeRunModeledLinkBytes": 611584000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2304,
+      "domainShift": {
+        "traceFingerprint": "71c209fa",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25856000000,
+        "triggeredPostShiftModeledLinkBytes": 28864000000,
+        "postShiftModeledLinkBytesPercentChange": 11.63366337
+      },
+      "steady": {
+        "traceFingerprint": "d17fee5b",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 610816000000,
+        "triggeredWholeRunModeledLinkBytes": 610816000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2305,
+      "domainShift": {
+        "traceFingerprint": "a6da2176",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25792000000,
+        "triggeredPostShiftModeledLinkBytes": 28992000000,
+        "postShiftModeledLinkBytesPercentChange": 12.40694789
+      },
+      "steady": {
+        "traceFingerprint": "9e788db1",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 623296000000,
+        "triggeredWholeRunModeledLinkBytes": 623296000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2306,
+      "domainShift": {
+        "traceFingerprint": "7a3aa75d",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25792000000,
+        "triggeredPostShiftModeledLinkBytes": 29056000000,
+        "postShiftModeledLinkBytesPercentChange": 12.65508685
+      },
+      "steady": {
+        "traceFingerprint": "e2bade34",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 614464000000,
+        "triggeredWholeRunModeledLinkBytes": 614464000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2307,
+      "domainShift": {
+        "traceFingerprint": "82994a96",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25728000000,
+        "triggeredPostShiftModeledLinkBytes": 28480000000,
+        "postShiftModeledLinkBytesPercentChange": 10.69651741
+      },
+      "steady": {
+        "traceFingerprint": "83ff1e37",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 614912000000,
+        "triggeredWholeRunModeledLinkBytes": 614912000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2308,
+      "domainShift": {
+        "traceFingerprint": "e3d4e364",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 26112000000,
+        "triggeredPostShiftModeledLinkBytes": 28544000000,
+        "postShiftModeledLinkBytesPercentChange": 9.31372549
+      },
+      "steady": {
+        "traceFingerprint": "367d82a1",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 615552000000,
+        "triggeredWholeRunModeledLinkBytes": 615552000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2309,
+      "domainShift": {
+        "traceFingerprint": "946eb0e8",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25856000000,
+        "triggeredPostShiftModeledLinkBytes": 29760000000,
+        "postShiftModeledLinkBytesPercentChange": 15.0990099
+      },
+      "steady": {
+        "traceFingerprint": "00041349",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 619968000000,
+        "triggeredWholeRunModeledLinkBytes": 619968000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2310,
+      "domainShift": {
+        "traceFingerprint": "f599f20d",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25920000000,
+        "triggeredPostShiftModeledLinkBytes": 29248000000,
+        "postShiftModeledLinkBytesPercentChange": 12.83950617
+      },
+      "steady": {
+        "traceFingerprint": "bb1c92ff",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 614592000000,
+        "triggeredWholeRunModeledLinkBytes": 614592000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2311,
+      "domainShift": {
+        "traceFingerprint": "5ced96b1",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25856000000,
+        "triggeredPostShiftModeledLinkBytes": 29184000000,
+        "postShiftModeledLinkBytesPercentChange": 12.87128713
+      },
+      "steady": {
+        "traceFingerprint": "8dc56dae",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 617280000000,
+        "triggeredWholeRunModeledLinkBytes": 617280000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2312,
+      "domainShift": {
+        "traceFingerprint": "b6c5c8b2",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 26048000000,
+        "triggeredPostShiftModeledLinkBytes": 28736000000,
+        "postShiftModeledLinkBytesPercentChange": 10.31941032
+      },
+      "steady": {
+        "traceFingerprint": "f1df4eef",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 615552000000,
+        "triggeredWholeRunModeledLinkBytes": 615552000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2313,
+      "domainShift": {
+        "traceFingerprint": "db868df6",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25344000000,
+        "triggeredPostShiftModeledLinkBytes": 28160000000,
+        "postShiftModeledLinkBytesPercentChange": 11.11111111
+      },
+      "steady": {
+        "traceFingerprint": "fd8f5527",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 617280000000,
+        "triggeredWholeRunModeledLinkBytes": 617280000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2314,
+      "domainShift": {
+        "traceFingerprint": "f3bf72ac",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25920000000,
+        "triggeredPostShiftModeledLinkBytes": 28608000000,
+        "postShiftModeledLinkBytesPercentChange": 10.37037037
+      },
+      "steady": {
+        "traceFingerprint": "7e56d51b",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 613312000000,
+        "triggeredWholeRunModeledLinkBytes": 613312000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2315,
+      "domainShift": {
+        "traceFingerprint": "1f254fff",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25920000000,
+        "triggeredPostShiftModeledLinkBytes": 28672000000,
+        "postShiftModeledLinkBytesPercentChange": 10.61728395
+      },
+      "steady": {
+        "traceFingerprint": "478a7505",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 616960000000,
+        "triggeredWholeRunModeledLinkBytes": 616960000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2316,
+      "domainShift": {
+        "traceFingerprint": "69585354",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25984000000,
+        "triggeredPostShiftModeledLinkBytes": 28352000000,
+        "postShiftModeledLinkBytesPercentChange": 9.11330049
+      },
+      "steady": {
+        "traceFingerprint": "a3114e8f",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 617600000000,
+        "triggeredWholeRunModeledLinkBytes": 617600000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2317,
+      "domainShift": {
+        "traceFingerprint": "1d030792",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25856000000,
+        "triggeredPostShiftModeledLinkBytes": 29120000000,
+        "postShiftModeledLinkBytesPercentChange": 12.62376238
+      },
+      "steady": {
+        "traceFingerprint": "90d515e3",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 608896000000,
+        "triggeredWholeRunModeledLinkBytes": 608896000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2318,
+      "domainShift": {
+        "traceFingerprint": "594dfb5a",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25920000000,
+        "triggeredPostShiftModeledLinkBytes": 28928000000,
+        "postShiftModeledLinkBytesPercentChange": 11.60493827
+      },
+      "steady": {
+        "traceFingerprint": "aead2a6c",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 615104000000,
+        "triggeredWholeRunModeledLinkBytes": 615104000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2319,
+      "domainShift": {
+        "traceFingerprint": "64e766c6",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25856000000,
+        "triggeredPostShiftModeledLinkBytes": 28736000000,
+        "postShiftModeledLinkBytesPercentChange": 11.13861386
+      },
+      "steady": {
+        "traceFingerprint": "ca4f4004",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 616704000000,
+        "triggeredWholeRunModeledLinkBytes": 616704000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2320,
+      "domainShift": {
+        "traceFingerprint": "067c9063",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 26112000000,
+        "triggeredPostShiftModeledLinkBytes": 29504000000,
+        "postShiftModeledLinkBytesPercentChange": 12.99019608
+      },
+      "steady": {
+        "traceFingerprint": "dd6f3f29",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 614720000000,
+        "triggeredWholeRunModeledLinkBytes": 614720000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2321,
+      "domainShift": {
+        "traceFingerprint": "d3572e7a",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25920000000,
+        "triggeredPostShiftModeledLinkBytes": 27840000000,
+        "postShiftModeledLinkBytesPercentChange": 7.40740741
+      },
+      "steady": {
+        "traceFingerprint": "80a42831",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 616320000000,
+        "triggeredWholeRunModeledLinkBytes": 616320000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2322,
+      "domainShift": {
+        "traceFingerprint": "741aa569",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25920000000,
+        "triggeredPostShiftModeledLinkBytes": 29504000000,
+        "postShiftModeledLinkBytesPercentChange": 13.82716049
+      },
+      "steady": {
+        "traceFingerprint": "425350e2",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 616128000000,
+        "triggeredWholeRunModeledLinkBytes": 616128000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2323,
+      "domainShift": {
+        "traceFingerprint": "a35450ff",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25792000000,
+        "triggeredPostShiftModeledLinkBytes": 28224000000,
+        "postShiftModeledLinkBytesPercentChange": 9.4292804
+      },
+      "steady": {
+        "traceFingerprint": "4bef34e5",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 613056000000,
+        "triggeredWholeRunModeledLinkBytes": 613056000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2324,
+      "domainShift": {
+        "traceFingerprint": "b793bf04",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25920000000,
+        "triggeredPostShiftModeledLinkBytes": 28928000000,
+        "postShiftModeledLinkBytesPercentChange": 11.60493827
+      },
+      "steady": {
+        "traceFingerprint": "5985e620",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 617216000000,
+        "triggeredWholeRunModeledLinkBytes": 617216000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2325,
+      "domainShift": {
+        "traceFingerprint": "bde787aa",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25856000000,
+        "triggeredPostShiftModeledLinkBytes": 29888000000,
+        "postShiftModeledLinkBytesPercentChange": 15.59405941
+      },
+      "steady": {
+        "traceFingerprint": "41720c35",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 616448000000,
+        "triggeredWholeRunModeledLinkBytes": 616448000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2326,
+      "domainShift": {
+        "traceFingerprint": "897024f4",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25728000000,
+        "triggeredPostShiftModeledLinkBytes": 28672000000,
+        "postShiftModeledLinkBytesPercentChange": 11.44278607
+      },
+      "steady": {
+        "traceFingerprint": "6a549db0",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 612672000000,
+        "triggeredWholeRunModeledLinkBytes": 612672000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2327,
+      "domainShift": {
+        "traceFingerprint": "14262c3a",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25856000000,
+        "triggeredPostShiftModeledLinkBytes": 28800000000,
+        "postShiftModeledLinkBytesPercentChange": 11.38613861
+      },
+      "steady": {
+        "traceFingerprint": "404187dc",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 617856000000,
+        "triggeredWholeRunModeledLinkBytes": 617856000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2328,
+      "domainShift": {
+        "traceFingerprint": "67f83804",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25664000000,
+        "triggeredPostShiftModeledLinkBytes": 29248000000,
+        "postShiftModeledLinkBytesPercentChange": 13.96508728
+      },
+      "steady": {
+        "traceFingerprint": "5a7e4dc5",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 616384000000,
+        "triggeredWholeRunModeledLinkBytes": 616384000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    },
+    {
+      "seed": 2329,
+      "domainShift": {
+        "traceFingerprint": "7af54990",
+        "detectedEventTokens": [
+          518
+        ],
+        "preShiftEvents": 0,
+        "firstPostShiftEvent": 518,
+        "detectionDelayTokens": 6,
+        "detectedWithin64Tokens": true,
+        "fixedPostShiftModeledLinkBytes": 25856000000,
+        "triggeredPostShiftModeledLinkBytes": 29440000000,
+        "postShiftModeledLinkBytesPercentChange": 13.86138614
+      },
+      "steady": {
+        "traceFingerprint": "bbf25789",
+        "detectedEventTokens": [],
+        "fixedWholeRunModeledLinkBytes": 614720000000,
+        "triggeredWholeRunModeledLinkBytes": 614720000000,
+        "wholeRunModeledLinkBytesPercentChange": 0
+      }
+    }
+  ],
+  "summary": {
+    "detectedWithin64Count": 30,
+    "missedOrLateCount": 0,
+    "medianDetectionDelayTokens": 6,
+    "stationaryFalseTriggers": 0,
+    "stationaryFalseTriggersPer10000Tokens": 0,
+    "domainPreShiftTriggers": 0,
+    "domainPreShiftTriggersPer10000Tokens": 0,
+    "medianPostShiftModeledLinkBytesPercentChange": 11.52386217,
+    "postShiftMedianBootstrap95PercentInterval": {
+      "resamples": 10000,
+      "seed": 2339,
+      "lowerPercentile": 2.5,
+      "upperPercentile": 97.5,
+      "lower": 10.78035747,
+      "upper": 12.63942461
+    },
+    "medianStationaryWholeRunModeledLinkBytesPercentChange": 0,
+    "maximumStationaryWholeRunModeledLinkBytesPercentChange": 0
+  },
+  "gates": {
+    "detection": {
+      "requirement": "At least 27 of 30 abrupt shifts detected within 64 tokens.",
+      "passed": true
+    },
+    "stationaryFalseTriggers": {
+      "requirement": "At most one false trigger per 10,000 stationary tokens.",
+      "passed": true
+    },
+    "postShiftTraffic": {
+      "requirement": "Median first-64-token post-shift modeled-link-byte change is at most -5%, with paired-bootstrap 95% interval entirely below zero.",
+      "passed": false
+    },
+    "stationaryTraffic": {
+      "requirement": "Median stationary whole-run modeled-link-byte regression is no greater than 2%.",
+      "passed": true
+    }
+  },
+  "carryForward": false
+}

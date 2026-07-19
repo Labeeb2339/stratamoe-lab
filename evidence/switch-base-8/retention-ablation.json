@@ -49,7 +49,10 @@
     "shiftThresholdBits": 0.28,
     "rearmThresholdBits": 0.12,
     "minimumTransitionObservations": 2,
-    "maximumPrefetchesPerToken": 2
+    "maximumPrefetchesPerToken": 2,
+    "persistentThresholdTokens": 3,
+    "detectorCooldownTokens": 64,
+    "triggeredReweightingTokens": 64
   },
   "semanticGroupBoundaries": [
     {
@@ -79,7 +82,9 @@
       "controls": {
         "shiftCachePrefetch": false,
         "shiftCacheJsdReweighting": false,
-        "shiftCacheTransitionRetention": false
+        "shiftCacheTransitionRetention": false,
+        "shiftCachePersistentDetector": false,
+        "shiftCacheTriggeredReweighting": false
       },
       "detectedShiftEvents": [
         {
@@ -172,7 +177,9 @@
       "controls": {
         "shiftCachePrefetch": false,
         "shiftCacheJsdReweighting": true,
-        "shiftCacheTransitionRetention": false
+        "shiftCacheTransitionRetention": false,
+        "shiftCachePersistentDetector": false,
+        "shiftCacheTriggeredReweighting": false
       },
       "detectedShiftEvents": [
         {
@@ -265,7 +272,9 @@
       "controls": {
         "shiftCachePrefetch": false,
         "shiftCacheJsdReweighting": false,
-        "shiftCacheTransitionRetention": true
+        "shiftCacheTransitionRetention": true,
+        "shiftCachePersistentDetector": false,
+        "shiftCacheTriggeredReweighting": false
       },
       "detectedShiftEvents": [
         {
@@ -358,7 +367,9 @@
       "controls": {
         "shiftCachePrefetch": false,
         "shiftCacheJsdReweighting": true,
-        "shiftCacheTransitionRetention": true
+        "shiftCacheTransitionRetention": true,
+        "shiftCachePersistentDetector": false,
+        "shiftCacheTriggeredReweighting": false
       },
       "detectedShiftEvents": [
         {

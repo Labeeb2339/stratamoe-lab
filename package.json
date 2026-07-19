@@ -18,6 +18,7 @@
     "benchmark:captured": "tsx scripts/run-captured-benchmark.ts",
     "benchmark:captured:prefetch": "tsx scripts/run-prefetch-ablation.ts",
     "benchmark:captured:retention": "tsx scripts/run-retention-ablation.ts",
+    "benchmark:detector": "tsx scripts/run-detector-sanity.ts",
     "check": "npm run lint && npm run typecheck && npm run test:unit && npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },

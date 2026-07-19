@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   DEFAULT_CONFIG,
+  DEFAULT_SIMULATION_CONTROLS,
   POLICY_IDS,
   SIMULATION_LIMITS,
   analyzeRouterTrace,
@@ -367,11 +368,15 @@ test("config validation rejects unsafe or nonsensical settings", () => {
       shiftCachePrefetch: false,
       shiftCacheJsdReweighting: true,
       shiftCacheTransitionRetention: false,
+      shiftCachePersistentDetector: false,
+      shiftCacheTriggeredReweighting: false,
     }),
     {
       shiftCachePrefetch: false,
       shiftCacheJsdReweighting: true,
       shiftCacheTransitionRetention: false,
+      shiftCachePersistentDetector: false,
+      shiftCacheTriggeredReweighting: false,
     },
   );
   assert.throws(
@@ -380,6 +385,8 @@ test("config validation rejects unsafe or nonsensical settings", () => {
         shiftCachePrefetch: "no",
         shiftCacheJsdReweighting: true,
         shiftCacheTransitionRetention: true,
+        shiftCachePersistentDetector: false,
+        shiftCacheTriggeredReweighting: false,
       } as never),
     /shiftCachePrefetch must be a boolean/,
   );
@@ -389,9 +396,28 @@ test("config validation rejects unsafe or nonsensical settings", () => {
         shiftCachePrefetch: true,
         shiftCacheJsdReweighting: true,
         shiftCacheTransitionRetention: true,
+        shiftCachePersistentDetector: false,
+        shiftCacheTriggeredReweighting: false,
         unsupported: true,
       } as never),
     /unsupported field.*unsupported/,
+  );
+  assert.throws(
+    () =>
+      validateSimulationControls({
+        ...DEFAULT_SIMULATION_CONTROLS,
+        shiftCacheTriggeredReweighting: true,
+      }),
+    /cannot both be enabled/,
+  );
+  assert.throws(
+    () =>
+      validateSimulationControls({
+        ...DEFAULT_SIMULATION_CONTROLS,
+        shiftCacheJsdReweighting: false,
+        shiftCacheTriggeredReweighting: true,
+      }),
+    /requires shiftCachePersistentDetector/,
   );
   assert.throws(
     () => validateSimulationConfig(simulationConfig({ topK: 17 })),
