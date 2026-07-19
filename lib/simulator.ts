@@ -28,6 +28,10 @@ export interface SimulationControls {
   shiftCacheJsdReweighting: boolean;
   /** Include one-step transition predictions in the eviction retention score. */
   shiftCacheTransitionRetention: boolean;
+  /** Require persistent threshold exceedance and apply a cooldown to shift events. */
+  shiftCachePersistentDetector: boolean;
+  /** Use binary post-event reweighting instead of continuous JSD-score reweighting. */
+  shiftCacheTriggeredReweighting: boolean;
 }
 
 export type ComparisonConfig = Omit<SimulationConfig, "policy">;
@@ -250,6 +254,8 @@ export const DEFAULT_SIMULATION_CONTROLS: SimulationControls = Object.freeze({
   shiftCachePrefetch: true,
   shiftCacheJsdReweighting: true,
   shiftCacheTransitionRetention: true,
+  shiftCachePersistentDetector: false,
+  shiftCacheTriggeredReweighting: false,
 });
 
 /** Runtime limits protect browser/CLI callers before trace allocation begins. */
@@ -449,6 +455,8 @@ export function validateSimulationControls(
     "shiftCachePrefetch",
     "shiftCacheJsdReweighting",
     "shiftCacheTransitionRetention",
+    "shiftCachePersistentDetector",
+    "shiftCacheTriggeredReweighting",
   ] as const;
   assertAllowedKeys(input, "Simulation controls", keys);
   for (const key of keys) {
@@ -456,10 +464,25 @@ export function validateSimulationControls(
       throw new TypeError(`${key} must be a boolean.`);
     }
   }
+  if (input.shiftCacheTriggeredReweighting && input.shiftCacheJsdReweighting) {
+    throw new RangeError(
+      "shiftCacheTriggeredReweighting and shiftCacheJsdReweighting cannot both be enabled.",
+    );
+  }
+  if (
+    input.shiftCacheTriggeredReweighting &&
+    !input.shiftCachePersistentDetector
+  ) {
+    throw new RangeError(
+      "shiftCacheTriggeredReweighting requires shiftCachePersistentDetector.",
+    );
+  }
   return {
     shiftCachePrefetch: input.shiftCachePrefetch,
     shiftCacheJsdReweighting: input.shiftCacheJsdReweighting,
     shiftCacheTransitionRetention: input.shiftCacheTransitionRetention,
+    shiftCachePersistentDetector: input.shiftCachePersistentDetector,
+    shiftCacheTriggeredReweighting: input.shiftCacheTriggeredReweighting,
   };
 }
 
@@ -1010,6 +1033,9 @@ export const SHIFT_CACHE_PARAMETERS = Object.freeze({
   rearmThresholdBits: 0.12,
   minimumTransitionObservations: 2,
   maximumPrefetchesPerToken: 2,
+  persistentThresholdTokens: 3,
+  detectorCooldownTokens: 64,
+  triggeredReweightingTokens: 64,
 });
 
 interface CacheCounters {
@@ -1082,9 +1108,14 @@ class ShiftTracker {
 
   private readonly shortQueue: string[][] = [];
   private readonly longQueue: string[][] = [];
+  private readonly persistentDetector: boolean;
   private armed = true;
+  private aboveThresholdTokens = 0;
+  private cooldownTokensRemaining = 0;
+  private triggeredReweightingTokensRemaining = 0;
 
-  constructor(tokens: number) {
+  constructor(tokens: number, persistentDetector: boolean) {
+    this.persistentDetector = persistentDetector;
     this.shortWindowTokens = Math.max(
       SHIFT_CACHE_PARAMETERS.minimumShortWindowTokens,
       Math.min(
@@ -1095,7 +1126,21 @@ class ShiftTracker {
     this.longWindowTokens = this.shortWindowTokens * SHIFT_CACHE_PARAMETERS.longWindowMultiplier;
   }
 
+  get triggeredReweightingActive(): boolean {
+    return this.triggeredReweightingTokensRemaining > 0;
+  }
+
   observe(experts: readonly string[]): { score: number; detected: boolean } {
+    if (this.persistentDetector) {
+      this.cooldownTokensRemaining = Math.max(
+        0,
+        this.cooldownTokensRemaining - 1,
+      );
+      this.triggeredReweightingTokensRemaining = Math.max(
+        0,
+        this.triggeredReweightingTokensRemaining - 1,
+      );
+    }
     const tokenExperts = [...experts];
     this.shortQueue.push(tokenExperts);
     this.longQueue.push(tokenExperts);
@@ -1127,11 +1172,40 @@ class ShiftTracker {
     this.currentScore = jensenShannonDivergence(this.shortCounts, baselineCounts);
 
     let detected = false;
-    if (this.armed && this.currentScore >= SHIFT_CACHE_PARAMETERS.shiftThresholdBits) {
+    if (!this.persistentDetector) {
+      if (this.armed && this.currentScore >= SHIFT_CACHE_PARAMETERS.shiftThresholdBits) {
+        this.detectedShifts += 1;
+        this.armed = false;
+        detected = true;
+      } else if (this.currentScore <= SHIFT_CACHE_PARAMETERS.rearmThresholdBits) {
+        this.armed = true;
+      }
+      return { score: this.currentScore, detected };
+    }
+
+    if (this.currentScore >= SHIFT_CACHE_PARAMETERS.shiftThresholdBits) {
+      this.aboveThresholdTokens += 1;
+    } else {
+      this.aboveThresholdTokens = 0;
+    }
+
+    if (
+      this.armed &&
+      this.cooldownTokensRemaining === 0 &&
+      this.aboveThresholdTokens >= SHIFT_CACHE_PARAMETERS.persistentThresholdTokens
+    ) {
       this.detectedShifts += 1;
       this.armed = false;
+      this.aboveThresholdTokens = 0;
+      this.cooldownTokensRemaining = SHIFT_CACHE_PARAMETERS.detectorCooldownTokens;
+      this.triggeredReweightingTokensRemaining =
+        SHIFT_CACHE_PARAMETERS.triggeredReweightingTokens;
       detected = true;
-    } else if (this.currentScore <= SHIFT_CACHE_PARAMETERS.rearmThresholdBits) {
+    } else if (
+      !this.armed &&
+      this.cooldownTokensRemaining === 0 &&
+      this.currentScore <= SHIFT_CACHE_PARAMETERS.rearmThresholdBits
+    ) {
       this.armed = true;
     }
     return { score: this.currentScore, detected };
@@ -1187,7 +1261,10 @@ class HierarchySimulator {
   constructor(config: SimulationConfig, controls: SimulationControls) {
     this.config = config;
     this.controls = controls;
-    this.shiftTracker = new ShiftTracker(config.tokens);
+    this.shiftTracker = new ShiftTracker(
+      config.tokens,
+      controls.shiftCachePersistentDetector,
+    );
   }
 
   demand(key: string): AccessSource {
@@ -1289,13 +1366,17 @@ class HierarchySimulator {
       const longMaximum = Math.max(1, ...this.shiftTracker.longCounts.values());
       const shortMaximum = Math.max(1, ...this.shiftTracker.shortCounts.values());
       const predictionMaximum = Math.max(1, ...this.predictionScores.values());
-      const adaptation = this.controls.shiftCacheJsdReweighting
-        ? Math.min(
-            1,
-            this.shiftTracker.currentScore /
-              SHIFT_CACHE_PARAMETERS.shiftThresholdBits,
-          )
-        : 0;
+      const adaptation = this.controls.shiftCacheTriggeredReweighting
+        ? this.shiftTracker.triggeredReweightingActive
+          ? 1
+          : 0
+        : this.controls.shiftCacheJsdReweighting
+          ? Math.min(
+              1,
+              this.shiftTracker.currentScore /
+                SHIFT_CACHE_PARAMETERS.shiftThresholdBits,
+            )
+          : 0;
       const longWeight = 0.55 - 0.45 * adaptation;
       const shortWeight = 0.15 + 0.3 * adaptation;
       const transitionWeight = this.controls.shiftCacheTransitionRetention

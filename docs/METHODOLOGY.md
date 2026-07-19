@@ -69,10 +69,10 @@ Jensen-Shannon divergence is symmetric and finite for discrete distributions wit
 
 As divergence rises, ShiftCache continuously reduces the weight assigned to long-term frequency and increases the influence of recent frequency, recency, and optionally learned one-step expert transitions. A transition score estimates which expert is likely after recently observed experts. Prefetching may promote an exact expert earlier; a wrong prefetch wastes bandwidth or cache capacity but must not change later router selections.
 
-The current threshold-crossing event is telemetry only. It does not gate the
-retention formula or trigger a separate policy update. This implementation is
-therefore described as **JSD-score reweighting**, not a completed
-change-triggered detector/controller.
+In the original/default mode, a threshold-crossing event is telemetry only and
+the JSD score changes retention continuously. The preregistered sanity sweep
+adds an opt-in persistent detector and a fixed event-gated intervention without
+changing the historical continuous-scoring result.
 
 This combination is a **project hypothesis**, not a claim that distribution-aware caching, recency/frequency hybrids, transition prediction, or workload adaptation are new. MoE-Infinity studies request-level activation patterns and workload changes; DALI studies workload-aware cache replacement; HybriMoE uses score-based caching for unstable activations; and Colibrì documents live LFRU placement.
 
@@ -161,9 +161,13 @@ reduced them by 0.52%. The combined score was 2.68% worse than the fixed score,
 and every ShiftCache variant remained worse than LFU. These are descriptive
 results from one 215-token encoder trace, not estimates of a population effect.
 
-The next detector experiment must implement explicit persistence and cooldown,
-record known synthetic change points, and evaluate delay, misses, and stationary
-false triggers across a preregistered seed set before any threshold is changed.
+The preregistered detector sweep is now complete. Three-token persistence detected all 30 known
+midpoint shifts with a six-token median delay and no stationary false triggers.
+However, the registered 64-token intervention increased paired post-shift
+modeled link bytes by a median 11.52%, with a paired-bootstrap 95% interval of
+[+10.78%, +12.64%]. The traffic gate failed, so the current JSD-gated retention
+mechanism is stopped rather than retuned on the evaluated seeds. See
+[Preregistered detector sanity sweep](DETECTOR_SANITY.md).
 
 ## 9. Path to real-trace validation
 

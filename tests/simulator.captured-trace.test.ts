@@ -181,6 +181,8 @@ test("checked-in prefetch ablation preserves the captured result", () => {
         shiftCachePrefetch: boolean;
         shiftCacheJsdReweighting: boolean;
         shiftCacheTransitionRetention: boolean;
+        shiftCachePersistentDetector: boolean;
+        shiftCacheTriggeredReweighting: boolean;
       };
       metrics: SimulationMetrics;
     }>;
@@ -245,6 +247,8 @@ test("checked-in retention ablation isolates the two scoring factors", () => {
         shiftCachePrefetch: boolean;
         shiftCacheJsdReweighting: boolean;
         shiftCacheTransitionRetention: boolean;
+        shiftCachePersistentDetector: boolean;
+        shiftCacheTriggeredReweighting: boolean;
       };
       detectedShiftEvents: Array<{ token: number; scoreBits: number }>;
       metrics: SimulationMetrics;

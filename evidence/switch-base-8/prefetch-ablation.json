@@ -48,7 +48,10 @@
     "shiftThresholdBits": 0.28,
     "rearmThresholdBits": 0.12,
     "minimumTransitionObservations": 2,
-    "maximumPrefetchesPerToken": 2
+    "maximumPrefetchesPerToken": 2,
+    "persistentThresholdTokens": 3,
+    "detectorCooldownTokens": 64,
+    "triggeredReweightingTokens": 64
   },
   "traceDiagnostics": {
     "totalExpertSelections": 1290,
@@ -63,7 +66,9 @@
       "controls": {
         "shiftCachePrefetch": true,
         "shiftCacheJsdReweighting": true,
-        "shiftCacheTransitionRetention": true
+        "shiftCacheTransitionRetention": true,
+        "shiftCachePersistentDetector": false,
+        "shiftCacheTriggeredReweighting": false
       },
       "metrics": {
         "gpuHitRate": 0.32325581,
@@ -99,7 +104,9 @@
       "controls": {
         "shiftCachePrefetch": false,
         "shiftCacheJsdReweighting": true,
-        "shiftCacheTransitionRetention": true
+        "shiftCacheTransitionRetention": true,
+        "shiftCachePersistentDetector": false,
+        "shiftCacheTriggeredReweighting": false
       },
       "metrics": {
         "gpuHitRate": 0.28062016,

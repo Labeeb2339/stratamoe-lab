@@ -10,7 +10,7 @@ The repository implements an inspectable experiment, not a production inference 
 
 - **LRU** keeps the most recently used experts.
 - **LFU** keeps the most frequently used experts over the run.
-- **ShiftCache** compares recent and longer-horizon activation distributions with Jensen-Shannon divergence (JSD), continuously reweights historical frequency, recent frequency, and recency, and can add observed one-step transition scores. Threshold-crossing events are currently telemetry; they do not yet trigger a separate controller action.
+- **ShiftCache** compares recent and longer-horizon activation distributions with Jensen-Shannon divergence (JSD), can continuously reweight historical frequency, recent frequency, and recency, and can add observed one-step transition scores. An opt-in persistent detector can gate a fixed intervention; its preregistered test failed the traffic gate.
 
 Every policy moves the requested expert weights; none may replace, skip, reroute, or silently lower the precision of a selected expert. `semanticRoutingChanges` should therefore remain zero.
 
@@ -64,11 +64,19 @@ only **0.52%** and **1.33%**, respectively. It was the best ShiftCache variant
 but still moved **11.50% more whole-run modeled bytes than LFU**. On this trace,
 JSD reweighting is negative evidence, not a result to promote as a win.
 
+A preregistered 30-seed synthetic sanity sweep then added three-token
+persistence, a 64-token cooldown, and a fixed 64-token event-gated intervention.
+It detected all 30 known midpoint shifts after six tokens and produced zero
+stationary false triggers, but it **increased** first-64-token post-shift modeled
+link bytes by a median **11.52%**; the paired-bootstrap 95% interval was
+**[+10.78%, +12.64%]**. The traffic gate failed, so this JSD-gated retention
+intervention is not being carried into ShiftQ-MoE.
+
 ## Why this experiment exists
 
 [Colibrì](https://github.com/JustVugg/colibri) demonstrates a real VRAM/RAM/storage hierarchy, per-layer caching, pinned hot experts, and live placement policies while preserving router semantics by default. [MoE-Infinity](https://arxiv.org/abs/2401.14361) studies request-level activation traces, predictive caching, and recovery after task or dataset shifts. [DALI](https://arxiv.org/abs/2602.03495) already proposes workload-aware cache replacement, and Colibrì now documents an LFRU-style live placement policy. Those systems make a broad “first workload-aware MoE cache” claim indefensible here.
 
-StrataMoE Lab instead contributes a small, reproducible surface for isolating one hypothesis: whether **router-distribution change signals** can help a non-semantic placement policy recover from abrupt shifts in a controlled trace. The first captured trace is a negative result for continuous JSD reweighting. A genuinely change-triggered controller still requires persistence, cooldown, and ground-truth timing evaluation before it exists in this project. Scientific novelty would still require multiple real router traces, stronger baselines, hardware measurements, ablations, and statistical replication.
+StrataMoE Lab instead contributes a small, reproducible surface for isolating one hypothesis: whether **router-distribution change signals** can help a non-semantic placement policy recover from abrupt shifts in a controlled trace. The first captured trace is a negative result for continuous JSD reweighting, and the preregistered synthetic sweep is a negative result for the tested event-gated intervention. Scientific novelty would still require a new out-of-sample hypothesis, multiple real router traces, stronger baselines, hardware measurements, ablations, and statistical replication.
 
 ## Quick start
 
@@ -95,6 +103,7 @@ npm run benchmark
 npm run benchmark:captured
 npm run benchmark:captured:prefetch
 npm run benchmark:captured:retention
+npm run benchmark:detector
 ```
 
 The dashboard lets you choose a scenario, seed, token count, model shape, cache capacity, expert size, and modeled bandwidths; run all policies; inspect per-token behavior and final tier residency; and export or import deterministic router traces.
@@ -121,6 +130,7 @@ When reporting a result, include:
 - [Related work](docs/RELATED_WORK.md) — primary papers and official repositories, including work from Chinese universities and labs
 - [Limitations](docs/LIMITATIONS.md) — what the simulator cannot support as a claim
 - [Captured Switch-Base-8 trace](docs/CAPTURED_SWITCH_TRACE.md) — pinned model execution, provenance, reproduction, and replay boundary
+- [Preregistered detector sanity sweep](docs/DETECTOR_SANITY.md) — frozen gates, per-seed synthetic result, and failed carry-forward decision
 - [ShiftQ-MoE research plan](docs/SHIFTQ_MOE_RESEARCH_PLAN.md) — closest prior work, candidate method, baselines, ablations, and strict go/no-go gates
 - [Two-minute outreach demo](docs/OUTREACH_DEMO.md) — an honest walkthrough and ask for the 2026-07-21 call
 
@@ -131,7 +141,7 @@ When reporting a result, include:
 1. **Trace harness:** deterministic synthetic traces, inspection UI, fixed regression benchmark, and honest modeled metrics.
 2. **Real-trace replay:** collect router IDs from multiple open MoE families and compare stronger activation-aware baselines.
 3. **Runtime validation:** integrate a frozen policy into one open runtime and measure actual traffic, TTFT, TPOT, and energy on named hardware.
-4. **Precision study:** only after the placement result is understood, test the falsifiable [ShiftQ-MoE research plan](docs/SHIFTQ_MOE_RESEARCH_PLAN.md) with expert-balanced calibration, per-expert quality evidence, close baselines, and preregistered failure gates.
+4. **Precision study:** paused for the current JSD-gated design because its preregistered placement gate failed. Any future precision study must begin as a separately registered static sensitivity baseline or supply new out-of-sample detector evidence before reviving a shift-triggered claim.
 
 The source code is licensed under the [Apache License 2.0](LICENSE).
 
