@@ -34,6 +34,17 @@ export interface SimulationControls {
   shiftCacheTriggeredReweighting: boolean;
 }
 
+/** Token interval where ShiftCache uses maximum short-window adaptation. */
+export interface ReweightingWindow {
+  startToken: number;
+  endTokenExclusive: number;
+}
+
+/** Serializable experimental actions kept separate from historical controls. */
+export interface SimulationExecutionPlan {
+  forcedReweightingWindows: readonly ReweightingWindow[];
+}
+
 export type ComparisonConfig = Omit<SimulationConfig, "policy">;
 
 export type TraceConfig = Pick<
@@ -484,6 +495,74 @@ export function validateSimulationControls(
     shiftCachePersistentDetector: input.shiftCachePersistentDetector,
     shiftCacheTriggeredReweighting: input.shiftCacheTriggeredReweighting,
   };
+}
+
+export function validateSimulationExecutionPlan(
+  input: SimulationExecutionPlan,
+  context: Pick<SimulationConfig, "policy" | "tokens">,
+): SimulationExecutionPlan {
+  assertRecord(input, "Simulation execution plan");
+  assertAllowedKeys(
+    input,
+    "Simulation execution plan",
+    ["forcedReweightingWindows"],
+  );
+  assertRecord(context, "Simulation execution plan context");
+  if (typeof context.policy !== "string" || !POLICY_SET.has(context.policy)) {
+    throw new RangeError(`policy must be one of: ${POLICY_IDS.join(", ")}.`);
+  }
+  assertInteger(context.tokens, "tokens", 1);
+  assertRange(context.tokens, "tokens", 1, SIMULATION_LIMITS.maxTokens);
+  if (!Array.isArray(input.forcedReweightingWindows)) {
+    throw new TypeError(
+      "Simulation execution plan forcedReweightingWindows must be an array.",
+    );
+  }
+
+  const windows = input.forcedReweightingWindows.map((window, index) => {
+    const label = `Simulation execution plan forcedReweightingWindows[${index}]`;
+    assertRecord(window, label);
+    assertAllowedKeys(window, label, ["startToken", "endTokenExclusive"]);
+    assertInteger(window.startToken, `${label}.startToken`, 0);
+    assertInteger(window.endTokenExclusive, `${label}.endTokenExclusive`, 1);
+    if (window.startToken >= window.endTokenExclusive) {
+      throw new RangeError(
+        `${label}.startToken must be less than endTokenExclusive.`,
+      );
+    }
+    if (window.endTokenExclusive > context.tokens) {
+      throw new RangeError(
+        `${label}.endTokenExclusive cannot exceed the simulation token count.`,
+      );
+    }
+    return {
+      startToken: window.startToken,
+      endTokenExclusive: window.endTokenExclusive,
+    };
+  });
+
+  for (let index = 1; index < windows.length; index += 1) {
+    const previous = windows[index - 1];
+    const current = windows[index];
+    if (current.startToken < previous.startToken) {
+      throw new RangeError(
+        "Simulation execution plan forcedReweightingWindows must be sorted by startToken.",
+      );
+    }
+    if (current.startToken < previous.endTokenExclusive) {
+      throw new RangeError(
+        "Simulation execution plan forcedReweightingWindows must not overlap.",
+      );
+    }
+  }
+
+  if (context.policy !== "shift-cache" && windows.length > 0) {
+    throw new RangeError(
+      "Forced reweighting windows are only supported by the shift-cache policy.",
+    );
+  }
+
+  return { forcedReweightingWindows: windows };
 }
 
 function validateTraceDescriptor(input: TraceConfig): TraceConfig {
@@ -1255,16 +1334,39 @@ class HierarchySimulator {
   private predictionScores = new Map<string, number>();
   private previousLayers: string[][] | undefined;
   private clock = 0;
+  private forcedReweightingActive = false;
+  private forcedWindowIndex = 0;
   private readonly config: SimulationConfig;
   private readonly controls: SimulationControls;
+  private readonly executionPlan: SimulationExecutionPlan;
 
-  constructor(config: SimulationConfig, controls: SimulationControls) {
+  constructor(
+    config: SimulationConfig,
+    controls: SimulationControls,
+    executionPlan: SimulationExecutionPlan,
+  ) {
     this.config = config;
     this.controls = controls;
+    this.executionPlan = executionPlan;
     this.shiftTracker = new ShiftTracker(
       config.tokens,
       controls.shiftCachePersistentDetector,
     );
+  }
+
+  beginToken(token: number): void {
+    const windows = this.executionPlan.forcedReweightingWindows;
+    while (
+      this.forcedWindowIndex < windows.length &&
+      token >= windows[this.forcedWindowIndex].endTokenExclusive
+    ) {
+      this.forcedWindowIndex += 1;
+    }
+    const window = windows[this.forcedWindowIndex];
+    this.forcedReweightingActive =
+      window !== undefined &&
+      token >= window.startToken &&
+      token < window.endTokenExclusive;
   }
 
   demand(key: string): AccessSource {
@@ -1366,7 +1468,9 @@ class HierarchySimulator {
       const longMaximum = Math.max(1, ...this.shiftTracker.longCounts.values());
       const shortMaximum = Math.max(1, ...this.shiftTracker.shortCounts.values());
       const predictionMaximum = Math.max(1, ...this.predictionScores.values());
-      const adaptation = this.controls.shiftCacheTriggeredReweighting
+      const adaptation = this.forcedReweightingActive
+        ? 1
+        : this.controls.shiftCacheTriggeredReweighting
         ? this.shiftTracker.triggeredReweightingActive
           ? 1
           : 0
@@ -1520,22 +1624,29 @@ function allExpertKeys(config: SimulationConfig): string[] {
   return keys;
 }
 
-export function runSimulation(
+const EMPTY_SIMULATION_EXECUTION_PLAN: SimulationExecutionPlan = Object.freeze({
+  forcedReweightingWindows: Object.freeze([]),
+});
+
+function runSimulationInternal(
   input: SimulationConfig,
   traceInput?: RouterTrace,
   controlsInput: SimulationControls = DEFAULT_SIMULATION_CONTROLS,
+  executionPlanInput: SimulationExecutionPlan = EMPTY_SIMULATION_EXECUTION_PLAN,
 ): SimulationResult {
   const config = validateSimulationConfig(input);
   const controls = validateSimulationControls(controlsInput);
+  const executionPlan = validateSimulationExecutionPlan(executionPlanInput, config);
   const expectedTrace = traceConfigFromSimulation(config);
   const trace = traceInput
     ? validateRouterTrace(traceInput, expectedTrace)
     : generateRouterTrace(expectedTrace);
   const traceDiagnostics = analyzeRouterTrace(trace, config.gpuSlots);
-  const simulator = new HierarchySimulator(config, controls);
+  const simulator = new HierarchySimulator(config, controls, executionPlan);
   const timeline: TokenTimelinePoint[] = [];
 
   for (let token = 0; token < trace.tokens; token += 1) {
+    simulator.beginToken(token);
     const before = snapshotCounters(simulator.counters);
     const layerSelections = trace.selections[token].map((experts, layer) =>
       experts.map((expert) => expertKey(layer, expert)),
@@ -1623,6 +1734,28 @@ export function runSimulation(
     timeline,
     finalResidency,
   };
+}
+
+export function runSimulation(
+  input: SimulationConfig,
+  traceInput?: RouterTrace,
+  controlsInput: SimulationControls = DEFAULT_SIMULATION_CONTROLS,
+): SimulationResult {
+  return runSimulationInternal(input, traceInput, controlsInput);
+}
+
+export function runPlannedSimulation(
+  input: SimulationConfig,
+  traceInput: RouterTrace | undefined,
+  controlsInput: SimulationControls,
+  executionPlanInput: SimulationExecutionPlan,
+): SimulationResult {
+  return runSimulationInternal(
+    input,
+    traceInput,
+    controlsInput,
+    executionPlanInput,
+  );
 }
 
 export function runComparison(input: ComparisonConfig): SimulationResult[] {

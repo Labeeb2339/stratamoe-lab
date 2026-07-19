@@ -169,6 +169,14 @@ modeled link bytes by a median 11.52%, with a paired-bootstrap 95% interval of
 mechanism is stopped rather than retuned on the evaluated seeds. See
 [Preregistered detector sanity sweep](DETECTOR_SANITY.md).
 
+The follow-up [shift actionability pilot](ACTIONABILITY_RESULTS.md) kept that
+detector and action frozen, added the explicit no-action choice, and evaluated a
+12-token causal shadow gate across five cache capacities. It found a narrow
+positive 64-slot regime but failed safety and coverage: 16 of 76 executed
+actions were harmful, the worst regression was 21.34%, and oracle-actionable
+cells appeared at only one capacity. This is a second stopped candidate, not a
+reason to retune either experiment's held-out seeds.
+
 ## 9. Path to real-trace validation
 
 The next validation stage is trace replay before full runtime integration:

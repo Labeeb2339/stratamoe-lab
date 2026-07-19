@@ -296,6 +296,20 @@ export function ExperimentWorkbench() {
         </aside>
       </section>
 
+      <section className="evidence-checkpoint" aria-labelledby="checkpoint-heading">
+        <div className="checkpoint-copy">
+          <p>Latest preregistered checkpoint</p>
+          <h2 id="checkpoint-heading">Detection passed. Action safety did not.</h2>
+          <span>A causal shadow gate found one useful capacity regime, but failed its frozen safety and coverage gates. The candidate was stopped without retuning.</span>
+        </div>
+        <dl aria-label="Actionability pilot summary">
+          <div><dt>Controlled shifts</dt><dd>30 / 30</dd></div>
+          <div><dt>Harmful actions</dt><dd>16 / 76</dd></div>
+          <div><dt>Worst regression</dt><dd>+21.34%</dd></div>
+        </dl>
+        <a href="https://github.com/Labeeb2339/stratamoe-lab/blob/main/docs/ACTIONABILITY_RESULTS.md" target="_blank" rel="noreferrer">Read frozen result <span aria-hidden="true">↗</span></a>
+      </section>
+
       <section className="workbench" aria-labelledby="experiment-heading">
         <div className="section-heading workbench-heading">
           <div>

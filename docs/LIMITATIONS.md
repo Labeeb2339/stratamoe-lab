@@ -46,6 +46,14 @@ Transition counts can overfit recent paths. Prefetching can consume bandwidth, e
 
 LRU and LFU are necessary but weak baselines. Close prior work includes DALI's workload window, MoE-Infinity's activation-pattern matching, HybriMoE's score-based cache, Colibrì's LFRU-style live placement, and learned predictors such as ProMoE and ExpertFlow. A paper-quality claim requires stronger baselines.
 
+The actionability v1 traffic gate uses the existing one-way modeled link-byte
+counter. It includes RAM-to-GPU demand movement and NVMe-to-RAM reads, but not
+GPU-to-RAM demotions or proactive state-reconciliation migration. Its causal
+shadow result therefore cannot support a migration-aware claim. The candidate
+also failed its preregistered safety and coverage gates; the positive 64-slot
+subset must not be reported without those failures and the stronger LRU
+reference.
+
 ## Precision and quality
 
 The first release assumes a fixed expert size and does not silently lower precision. This avoids conflating placement with quantization but also means the simulator cannot answer quantization questions.
@@ -78,6 +86,10 @@ With a linked commit and complete configuration, the repository may support stat
 > The fixed benchmark and automated tests reproduced the checked-in policy behavior.
 
 > Under the simulator's bandwidth model, the candidate policy had a lower estimated transfer stall.
+
+> In a preregistered synthetic capacity sweep, the causal shadow gate found one
+> positive capacity regime but failed its safety and coverage gates, so the
+> candidate was not carried forward.
 
 ## Claims that are not currently supportable
 

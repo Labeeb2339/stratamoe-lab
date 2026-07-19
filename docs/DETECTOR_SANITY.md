@@ -77,3 +77,8 @@ The result may be described as:
 
 It must not be described as a real-model inference slowdown, a quantization
 result, or proof that all distribution-change detection is ineffective.
+
+The next frozen experiment is reported separately in
+[Shift actionability pilot v1](ACTIONABILITY_RESULTS.md). It tested whether a
+causal shadow gate could decide when this same failed action was worth applying;
+that candidate also failed its preregistered safety and coverage gates.

@@ -72,6 +72,26 @@ link bytes by a median **11.52%**; the paired-bootstrap 95% interval was
 **[+10.78%, +12.64%]**. The traffic gate failed, so this JSD-gated retention
 intervention is not being carried into ShiftQ-MoE.
 
+## Shift actionability pilot
+
+The next experiment asked whether a causal 12-token shadow replay could decide
+when that frozen action was worth applying. Its protocol was published before
+30 new seeds were run across five GPU capacities. The detector again found all
+30 controlled shifts and produced no stationary events.
+
+The actionability candidate still failed carry-forward. It acted in 76 of 150
+abrupt cells; 16 actions were harmful (**21.05%**) and the worst regression was
+**21.34%**. A narrow 64-slot subset did show a median **9.75%** traffic
+reduction with a seed-cluster bootstrap 95% interval of **[9.45%, 10.32%]
+savings**, but all oracle-actionable cells came from that single capacity and
+LRU remained substantially better there. The frozen protocol required coverage
+across at least three capacities, at most 10% harmful actions, and no regression
+above 2%, so `carryForward = false`.
+
+This is evidence that actionability depends on cache pressure and timing, not a
+validated new policy. See the [frozen protocol](docs/ACTIONABILITY_PROTOCOL.md)
+and [complete result](docs/ACTIONABILITY_RESULTS.md).
+
 ## Why this experiment exists
 
 [Colibrì](https://github.com/JustVugg/colibri) demonstrates a real VRAM/RAM/storage hierarchy, per-layer caching, pinned hot experts, and live placement policies while preserving router semantics by default. [MoE-Infinity](https://arxiv.org/abs/2401.14361) studies request-level activation traces, predictive caching, and recovery after task or dataset shifts. [DALI](https://arxiv.org/abs/2602.03495) already proposes workload-aware cache replacement, and Colibrì now documents an LFRU-style live placement policy. Those systems make a broad “first workload-aware MoE cache” claim indefensible here.
@@ -104,6 +124,8 @@ npm run benchmark:captured
 npm run benchmark:captured:prefetch
 npm run benchmark:captured:retention
 npm run benchmark:detector
+npm run benchmark:actionability
+npm run benchmark:actionability:verify
 ```
 
 The dashboard lets you choose a scenario, seed, token count, model shape, cache capacity, expert size, and modeled bandwidths; run all policies; inspect per-token behavior and final tier residency; and export or import deterministic router traces.
@@ -131,6 +153,8 @@ When reporting a result, include:
 - [Limitations](docs/LIMITATIONS.md) — what the simulator cannot support as a claim
 - [Captured Switch-Base-8 trace](docs/CAPTURED_SWITCH_TRACE.md) — pinned model execution, provenance, reproduction, and replay boundary
 - [Preregistered detector sanity sweep](docs/DETECTOR_SANITY.md) — frozen gates, per-seed synthetic result, and failed carry-forward decision
+- [Shift actionability protocol](docs/ACTIONABILITY_PROTOCOL.md) — untouched seeds, causal decision rule, metrics, and frozen gates
+- [Shift actionability result](docs/ACTIONABILITY_RESULTS.md) — capacity-dependent outcome, byte-identical evidence, and failed carry-forward decision
 - [ShiftQ-MoE research plan](docs/SHIFTQ_MOE_RESEARCH_PLAN.md) — closest prior work, candidate method, baselines, ablations, and strict go/no-go gates
 - [Two-minute outreach demo](docs/OUTREACH_DEMO.md) — an honest walkthrough and ask for the 2026-07-21 call
 
@@ -141,7 +165,8 @@ When reporting a result, include:
 1. **Trace harness:** deterministic synthetic traces, inspection UI, fixed regression benchmark, and honest modeled metrics.
 2. **Real-trace replay:** collect router IDs from multiple open MoE families and compare stronger activation-aware baselines.
 3. **Runtime validation:** integrate a frozen policy into one open runtime and measure actual traffic, TTFT, TPOT, and energy on named hardware.
-4. **Precision study:** paused for the current JSD-gated design because its preregistered placement gate failed. Any future precision study must begin as a separately registered static sensitivity baseline or supply new out-of-sample detector evidence before reviving a shift-triggered claim.
+4. **Actionability study:** the first causal shadow gate is frozen after its preregistered safety and coverage gates failed, despite a narrow positive capacity regime.
+5. **Precision study:** paused for the current JSD-gated design. Any future precision study must begin as a separately registered static sensitivity baseline or supply new out-of-sample evidence before reviving a shift-triggered claim.
 
 The source code is licensed under the [Apache License 2.0](LICENSE).
 

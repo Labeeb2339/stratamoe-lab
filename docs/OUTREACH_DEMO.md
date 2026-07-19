@@ -32,10 +32,11 @@
 
 5. Show **Export router trace** and the methodology/limitations links:
 
-   > I froze the failed intervention rather than retuning it on the same seeds.
-   > My next question is when a shift is actually actionable: whether the new
-   > reuse pattern has enough benefit to repay cache churn and migration. This
-   > remains a simulator result, not a real GPU speed claim.
+   > I then preregistered 30 new seeds across five cache capacities and tested a
+   > causal shadow gate that could choose not to act. It found a useful regime
+   > at one capacity, but 21% of its executed actions were harmful and its worst
+   > regression was 21%. The safety and coverage gates failed, so I froze that
+   > candidate too. This remains a simulator result, not a real GPU speed claim.
 
 ## The ask — about 30 seconds
 
@@ -43,9 +44,9 @@ For Sarawak AI Centre:
 
 > Could I show you a five-minute reproducible demo and ask what evidence or
 > small supervised contribution would make this useful to your team? My next
-> evidence step is a preregistered actionability experiment on fresh open MoE
-> router traces: compare correct change detection with whether an intervention
-> actually repays its movement cost.
+> evidence step is to take the frozen actionability harness to a pinned public
+> OLMoE routing artifact, then ask whether a new cost model is worth testing on
+> fresh data rather than tuning the failed synthetic candidate.
 
 If speaking with SMD Semiconductor (Sarawak Microelectronics Design):
 
@@ -71,10 +72,10 @@ If speaking with SMD Semiconductor (Sarawak Microelectronics Design):
 **Did you make a breakthrough?**
 
 > Not yet. I have a reproducible counterintuitive finding and a preregistered
-> negative control: accurate shift detection still produced a harmful cache
-> action. A breakthrough claim would require a new method to beat strong
-> baselines on held-out real models and named hardware, with quality checks and
-> statistical replication.
+> negative control: accurate shift detection still produced harmful cache
+> actions, and the benefit changed sharply with cache capacity. A breakthrough
+> claim would require a new method to beat strong baselines on held-out real
+> models and named hardware, with quality checks and statistical replication.
 
 **Why show a failed intervention?**
 
@@ -86,7 +87,9 @@ If speaking with SMD Semiconductor (Sarawak Microelectronics Design):
 
 > It made the hypothesis falsifiable before a runtime integration. The harness
 > has already exposed a failure case, replayed a captured real-model router
-> trace, and compared policies without changing routing.
+> trace, and shown that a causal action gate can help in one capacity regime
+> while still failing its preregistered safety gates—all without changing
+> routing.
 
 **What would make it research-grade?**
 
