@@ -156,7 +156,6 @@ When reporting a result, include:
 - [Shift actionability protocol](docs/ACTIONABILITY_PROTOCOL.md) — untouched seeds, causal decision rule, metrics, and frozen gates
 - [Shift actionability result](docs/ACTIONABILITY_RESULTS.md) — capacity-dependent outcome, byte-identical evidence, and failed carry-forward decision
 - [ShiftQ-MoE research plan](docs/SHIFTQ_MOE_RESEARCH_PLAN.md) — closest prior work, candidate method, baselines, ablations, and strict go/no-go gates
-- [Two-minute outreach demo](docs/OUTREACH_DEMO.md) — an honest walkthrough and ask for the 2026-07-21 call
 
 [RouterTrace v2 schema](docs/ROUTER_TRACE_SCHEMA.md) documents synthetic/captured provenance, validation, privacy, and v1 migration.
 
