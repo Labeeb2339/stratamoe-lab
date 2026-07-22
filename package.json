@@ -21,7 +21,9 @@
     "benchmark:detector": "tsx scripts/run-detector-sanity.ts",
     "benchmark:actionability": "tsx scripts/run-actionability-pilot.ts --write",
     "benchmark:actionability:verify": "tsx scripts/run-actionability-pilot.ts --verify",
-    "check": "npm run lint && npm run typecheck && npm run test:unit && npm run build && node --test tests/rendered-html.test.mjs",
+    "evidence:render": "tsx scripts/render-readme-evidence.ts",
+    "evidence:check": "tsx scripts/render-readme-evidence.ts --check",
+    "check": "npm run lint && npm run typecheck && npm run evidence:check && npm run test:unit && npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {

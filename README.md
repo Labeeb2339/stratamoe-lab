@@ -1,5 +1,7 @@
 # StrataMoE Lab
 
+![StrataMoE Lab memory-tier trace visual](public/og.png)
+
 **A deterministic, trace-driven simulator for studying expert placement across GPU, RAM, and NVMe under changing Mixture-of-Experts workloads.**
 
 I built StrataMoE Lab to investigate one deliberately narrow question:
@@ -28,6 +30,22 @@ I report results in this form: **“On trace T under configuration C, policy A
 reduced simulated bytes per token by X% relative to policy B.”** I do not turn a
 simulator result into a hardware-speed claim. See
 [Methodology](docs/METHODOLOGY.md) and [Limitations](docs/LIMITATIONS.md).
+
+## Evidence at a glance
+
+![StrataMoE modeled traffic and actionability evidence](public/stratamoe-evidence.svg)
+
+The upper panels contrast one fixed synthetic trace with the pinned
+Switch-Base-8 router capture. The lower panel reports the preregistered
+actionability sweep: negative values mean fewer modeled link bytes than no
+action, while positive values mean a regression. The candidate helped only in
+narrow capacity regimes and failed its safety and coverage gates, so
+`carryForward = false`. Router selections are unchanged throughout; none of
+these values are hardware measurements.
+
+Regenerate the figure with `npm run evidence:render`; `npm run evidence:check`
+fails if the SVG no longer matches the executable benchmark and checked-in
+evidence.
 
 ## Fixed regression benchmark
 
