@@ -2,7 +2,7 @@
 
 **A deterministic, trace-driven simulator for studying expert placement across GPU, RAM, and NVMe under changing Mixture-of-Experts workloads.**
 
-StrataMoE Lab asks a deliberately narrow question:
+I built StrataMoE Lab to investigate one deliberately narrow question:
 
 > Can router-distribution change signals improve expert placement after workload shifts, compared with LRU and LFU, without changing the router's selected experts?
 
