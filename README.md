@@ -24,7 +24,10 @@ Every policy moves the requested expert weights; none may replace, skip, reroute
 | Compare policies on identical routing decisions | Establish model-quality preservation on generated text |
 | Report exact simulator counters and bandwidth-derived estimates | Claim a real tokens-per-second speedup or a new state of the art |
 
-The honest result format is: **“On trace T under configuration C, policy A reduced simulated bytes per token by X% relative to policy B.”** It is not: “A accelerates MoE inference by X%.” See [Methodology](docs/METHODOLOGY.md) and [Limitations](docs/LIMITATIONS.md).
+I report results in this form: **“On trace T under configuration C, policy A
+reduced simulated bytes per token by X% relative to policy B.”** I do not turn a
+simulator result into a hardware-speed claim. See
+[Methodology](docs/METHODOLOGY.md) and [Limitations](docs/LIMITATIONS.md).
 
 ## Fixed regression benchmark
 
