@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="930" viewBox="0 0 1500 930" role="img" aria-labelledby="title desc">
+  <title id="title">StrataMoE trace and actionability evidence</title>
+  <desc id="desc">Modeled link traffic for ShiftCache, LRU, and LFU on one synthetic trace and one captured Switch-Base-8 router trace, followed by the traffic change from a causal shadow gate across five modeled GPU capacities.</desc>
+  <style>
+    .title{font:700 34px ui-monospace,SFMono-Regular,Consolas,monospace;fill:#f2f3ed;letter-spacing:1px}.panel-title{font:700 24px ui-monospace,SFMono-Regular,Consolas,monospace;fill:#f2f3ed}.subtitle,.small,.footer{font:400 16px Inter,Segoe UI,sans-serif;fill:#91a4a5}.label,.capacity{font:600 17px ui-monospace,SFMono-Regular,Consolas,monospace;fill:#e7ece8}.value{font:600 16px ui-monospace,SFMono-Regular,Consolas,monospace;fill:#f2f3ed}.track{fill:#182629}.rule{stroke:#294044;stroke-width:1}.zero{stroke:#d8dfdb;stroke-width:2}.panel{fill:#0d1719;stroke:#263a3d;stroke-width:1}
+  </style>
+  <rect width="1500" height="930" fill="#081113"/>
+  <path d="M40 68H1460" class="rule"/>
+  <text x="70" y="54" class="title">TRACE RESULT / ACTIONABILITY CHECK</text>
+  <text x="1430" y="53" text-anchor="end" class="subtitle">modeled link bytes / token · decimal MB · lower is better</text>
+  <rect x="70" y="92" width="650" height="380" rx="8" class="panel"/>
+  <rect x="780" y="92" width="650" height="380" rx="8" class="panel"/>
+  
+    <g>
+      <text x="110" y="126" class="panel-title">Synthetic domain shift</text>
+      <text x="110" y="158" class="subtitle">Seed 2339 · fixed deterministic fixture</text>
+      
+      <text x="110" y="216" class="label">ShiftCache</text>
+      <rect x="110" y="226" width="410" height="24" rx="3" class="track"/>
+      <rect x="110" y="226" width="166.52" height="24" rx="3" fill="#65d4d1"/>
+      <text x="538" y="245" class="value">264.00 MB</text>
+      <text x="110" y="302" class="label">LRU</text>
+      <rect x="110" y="312" width="410" height="24" rx="3" class="track"/>
+      <rect x="110" y="312" width="178.30" height="24" rx="3" fill="#bcc8c7"/>
+      <text x="538" y="331" class="value">282.67 MB</text>
+      <text x="110" y="388" class="label">LFU</text>
+      <rect x="110" y="398" width="410" height="24" rx="3" class="track"/>
+      <rect x="110" y="398" width="399.82" height="24" rx="3" fill="#efb64a"/>
+      <text x="538" y="417" class="value">633.87 MB</text>
+    </g>
+  
+    <g>
+      <text x="820" y="126" class="panel-title">Captured router trace</text>
+      <text x="820" y="158" class="subtitle">Switch-Base-8 · placement remains simulated</text>
+      
+      <text x="820" y="216" class="label">ShiftCache</text>
+      <rect x="820" y="226" width="410" height="24" rx="3" class="track"/>
+      <rect x="820" y="226" width="325.96" height="24" rx="3" fill="#65d4d1"/>
+      <text x="1248" y="245" class="value">516.76 MB</text>
+      <text x="820" y="302" class="label">LRU</text>
+      <rect x="820" y="312" width="410" height="24" rx="3" class="track"/>
+      <rect x="820" y="312" width="264.37" height="24" rx="3" fill="#bcc8c7"/>
+      <text x="1248" y="331" class="value">419.13 MB</text>
+      <text x="820" y="388" class="label">LFU</text>
+      <rect x="820" y="398" width="410" height="24" rx="3" class="track"/>
+      <rect x="820" y="398" width="225.32" height="24" rx="3" fill="#efb64a"/>
+      <text x="1248" y="417" class="value">357.21 MB</text>
+    </g>
+  <text x="70" y="506" class="panel-title">CAUSAL SHADOW GATE / FIRST 64 POST-SHIFT TOKENS</text>
+  <text x="70" y="535" class="subtitle">Median modeled-link-byte change versus no action · lower is better</text>
+  <text x="540" y="566" class="small">SAVINGS ←</text>
+  <text x="748" y="566" class="small">0</text>
+  <text x="790" y="566" class="small">→ REGRESSION</text>
+  <path d="M760 576V866" class="zero"/>
+  
+      <text x="120" y="613" class="capacity">8 slots</text>
+      <text x="238" y="613" class="small">30/30 actions · 0 harmful</text>
+      <rect x="732.74" y="596" width="27.26" height="22" rx="3" fill="#65d4d1"/>
+      <text x="718.74" y="613" text-anchor="end" class="value">-1.43%</text>
+      <text x="120" y="671" class="capacity">16 slots</text>
+      <text x="238" y="671" class="small">0/30 actions · 0 harmful</text>
+      <rect x="760.00" y="654" width="2.00" height="22" rx="3" fill="#bcc8c7"/>
+      <text x="774.00" y="671" text-anchor="start" class="value">0.00%</text>
+      <text x="120" y="729" class="capacity">32 slots</text>
+      <text x="238" y="729" class="small">16/30 actions · 16 harmful</text>
+      <rect x="760.00" y="712" width="268.76" height="22" rx="3" fill="#ef6e63"/>
+      <text x="1042.76" y="729" text-anchor="start" class="value">+14.15%</text>
+      <text x="120" y="787" class="capacity">64 slots</text>
+      <text x="238" y="787" class="small">30/30 actions · 0 harmful</text>
+      <rect x="574.78" y="770" width="185.22" height="22" rx="3" fill="#65d4d1"/>
+      <text x="560.78" y="787" text-anchor="end" class="value">-9.75%</text>
+      <text x="120" y="845" class="capacity">96 slots</text>
+      <text x="238" y="845" class="small">0/30 actions · 0 harmful</text>
+      <rect x="760.00" y="828" width="2.00" height="22" rx="3" fill="#bcc8c7"/>
+      <text x="774.00" y="845" text-anchor="start" class="value">0.00%</text>
+  <path d="M40 884H1460" class="rule"/>
+  <text x="70" y="914" class="footer">76/150 actions · 16 harmful (21.05%) · worst regression +21.34% · carryForward = false</text>
+</svg>
