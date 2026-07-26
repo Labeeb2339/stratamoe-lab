@@ -109,6 +109,15 @@ LRU remained substantially better there. The frozen protocol required coverage
 across at least three capacities, at most 10% harmful actions, and no regression
 above 2%, so `carryForward = false`.
 
+![StrataMoE preregistered actionability outcomes across five modeled GPU capacities and 30 untouched seeds](public/actionability-capacity-map.svg)
+
+I include the full 150-cell abrupt-shift sweep instead of isolating the positive
+64-slot subset. Each cell is one untouched seed: teal means fewer modeled link
+bytes than no action, coral means more, and neutral means the shadow gate did
+not act. The matrix exposes the result directly: the same frozen intervention
+helped at 8 and 64 slots, regressed at 32 slots, and did nothing at 16 and 96
+slots. The stationary control had zero detector events and zero actions.
+
 This is evidence that actionability depends on cache pressure and timing, not a
 validated new policy. See the [frozen protocol](docs/ACTIONABILITY_PROTOCOL.md)
 and [complete result](docs/ACTIONABILITY_RESULTS.md).

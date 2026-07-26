@@ -16,24 +16,38 @@ type ActionabilityRecord = {
   gpuSlots: number;
   gatedPrimaryPercentChangeVsNoAction: number;
   harmfulAction: boolean;
+  seed: number;
   shadowDecision: { act: boolean };
 };
 
 type ActionabilityEvidence = {
   payload: {
     carryForward: boolean;
-    records: { abrupt: ActionabilityRecord[] };
+    records: {
+      abrupt: ActionabilityRecord[];
+      stationary: ActionabilityRecord[];
+    };
     summary: {
       abruptCells: number;
       executedActions: number;
       harmfulExecutedActions: number;
       harmfulExecutedActionRate: number;
       maximumRegressionPercent: number;
+      stationaryCells: number;
+      stationaryDetectorEvents: number;
+      stationaryGatedActions: number;
     };
   };
 };
 
-const outputUrl = new URL("../public/stratamoe-evidence.svg", import.meta.url);
+const overviewOutputUrl = new URL(
+  "../public/stratamoe-evidence.svg",
+  import.meta.url,
+);
+const capacityOutputUrl = new URL(
+  "../public/actionability-capacity-map.svg",
+  import.meta.url,
+);
 const capturedUrl = new URL(
   "../evidence/switch-base-8/comparison.json",
   import.meta.url,
@@ -184,26 +198,140 @@ function renderSvg() {
 `;
 }
 
-const expected = renderSvg();
+function heatmapFill(percentChange: number) {
+  if (percentChange === 0) return { color: "#243638", opacity: 1 };
+  const opacity = Math.min(0.95, 0.34 + (Math.abs(percentChange) / 22) * 0.61);
+  return {
+    color: percentChange < 0 ? "#65d4d1" : "#ef6e63",
+    opacity,
+  };
+}
+
+function renderCapacityMap() {
+  const actionability = JSON.parse(
+    readFileSync(actionabilityUrl, "utf8"),
+  ) as ActionabilityEvidence;
+  const abrupt = actionability.payload.records.abrupt;
+  const seeds = [...new Set(abrupt.map((record) => record.seed))].sort(
+    (left, right) => left - right,
+  );
+  const gpuSlots = [8, 16, 32, 64, 96];
+  if (seeds.length !== 30 || abrupt.length !== seeds.length * gpuSlots.length) {
+    throw new Error("Expected the frozen 30-seed by 5-capacity abrupt sweep.");
+  }
+  if (actionability.payload.carryForward !== false) {
+    throw new Error("The checked-in actionability decision unexpectedly changed.");
+  }
+
+  const startX = 246;
+  const startY = 170;
+  const cellWidth = 25;
+  const cellHeight = 34;
+  const columnPitch = 31;
+  const rowPitch = 76;
+  const rows = gpuSlots.map((slots, rowIndex) => {
+    const records = abrupt
+      .filter((record) => record.gpuSlots === slots)
+      .sort((left, right) => left.seed - right.seed);
+    if (
+      records.length !== seeds.length ||
+      records.some((record, index) => record.seed !== seeds[index])
+    ) {
+      throw new Error(`Capacity ${slots} does not cover the frozen seed inventory.`);
+    }
+    const y = startY + rowIndex * rowPitch;
+    const changes = records.map(
+      (record) => record.gatedPrimaryPercentChangeVsNoAction,
+    );
+    const actions = records.filter((record) => record.shadowDecision.act).length;
+    const harmful = records.filter((record) => record.harmfulAction).length;
+    const cells = records.map((record, columnIndex) => {
+      const x = startX + columnIndex * columnPitch;
+      const fill = heatmapFill(record.gatedPrimaryPercentChangeVsNoAction);
+      const signed = `${record.gatedPrimaryPercentChangeVsNoAction > 0 ? "+" : ""}${record.gatedPrimaryPercentChangeVsNoAction.toFixed(2)}%`;
+      return `<rect x="${x}" y="${y}" width="${cellWidth}" height="${cellHeight}" rx="3" fill="${fill.color}" fill-opacity="${fill.opacity.toFixed(3)}"><title>Seed ${record.seed}, ${slots} GPU slots: ${signed} modeled link-byte change versus no action</title></rect>`;
+    });
+    const rowMedian = median(changes);
+    const signedMedian = `${rowMedian > 0 ? "+" : ""}${rowMedian.toFixed(2)}%`;
+    return `
+      <text x="70" y="${y + 23}" class="row-label">${slots} GPU slots</text>
+      ${cells.join("")}
+      <text x="1210" y="${y + 14}" class="summary-value">${signedMedian} median</text>
+      <text x="1210" y="${y + 36}" class="small">${actions}/30 acted / ${harmful} harmful</text>`;
+  });
+
+  const seedTicks = seeds
+    .map((seed, index) => ({ seed, index }))
+    .filter(({ index }) => index % 5 === 0 || index === seeds.length - 1)
+    .map(({ seed, index }) => {
+      const x = startX + index * columnPitch + cellWidth / 2;
+      return `<text x="${x}" y="146" text-anchor="middle" class="tick">${seed}</text>`;
+    });
+  const summary = actionability.payload.summary;
+  if (
+    summary.stationaryCells !== 30 ||
+    summary.stationaryDetectorEvents !== 0 ||
+    summary.stationaryGatedActions !== 0
+  ) {
+    throw new Error("The frozen stationary control summary unexpectedly changed.");
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="650" viewBox="0 0 1500 650" role="img" aria-labelledby="capacity-title capacity-desc">
+  <title id="capacity-title">StrataMoE actionability outcome by modeled GPU capacity and seed</title>
+  <desc id="capacity-desc">A 5 by 30 matrix shows modeled link-byte change versus no action for every preregistered abrupt-shift seed. Savings occur at 8 and 64 slots, regressions occur at 32 slots, and the intervention takes no action at 16 and 96 slots. The candidate failed its carry-forward gates.</desc>
+  <style>
+    .title{font:700 32px ui-monospace,SFMono-Regular,Consolas,monospace;fill:#f2f3ed;letter-spacing:1px}.subtitle,.small,.footer{font:400 16px Inter,Segoe UI,sans-serif;fill:#91a4a5}.tick{font:400 13px ui-monospace,SFMono-Regular,Consolas,monospace;fill:#718789}.row-label,.summary-value{font:600 17px ui-monospace,SFMono-Regular,Consolas,monospace;fill:#e7ece8}.rule{stroke:#294044;stroke-width:1}.status{font:700 17px ui-monospace,SFMono-Regular,Consolas,monospace;fill:#ef6e63}
+  </style>
+  <rect width="1500" height="650" fill="#081113"/>
+  <path d="M40 72H1460" class="rule"/>
+  <text x="70" y="54" class="title">ACTIONABILITY / ALL 150 ABRUPT-SHIFT CELLS</text>
+  <text x="1430" y="53" text-anchor="end" class="subtitle">first 64 post-shift tokens / modeled link bytes / lower is better</text>
+  <text x="70" y="116" class="subtitle">capacity</text>
+  <text x="246" y="116" class="subtitle">untouched seeds 4100-4129</text>
+  <text x="1210" y="116" class="subtitle">row result</text>
+  ${seedTicks.join("")}
+  ${rows.join("")}
+  <path d="M40 565H1460" class="rule"/>
+  <rect x="70" y="590" width="20" height="20" rx="3" fill="#65d4d1"/><text x="102" y="606" class="footer">savings</text>
+  <rect x="210" y="590" width="20" height="20" rx="3" fill="#243638"/><text x="242" y="606" class="footer">no action</text>
+  <rect x="378" y="590" width="20" height="20" rx="3" fill="#ef6e63"/><text x="410" y="606" class="footer">regression</text>
+  <text x="620" y="606" class="footer">stationary control / 30 seeds at 32 slots / 0 detector events / 0 actions</text>
+  <text x="1430" y="606" text-anchor="end" class="status">carryForward = false</text>
+</svg>
+`;
+}
+
+const expectedOutputs = new Map<URL, string>([
+  [overviewOutputUrl, renderSvg()],
+  [capacityOutputUrl, renderCapacityMap()],
+]);
 const check = process.argv.includes("--check");
 const normalizeLineEndings = (value: string) => value.replace(/\r\n/g, "\n");
 
 if (check) {
-  let current = "";
-  try {
-    current = readFileSync(outputUrl, "utf8");
-  } catch {
-    // A missing file is reported by the same stale-evidence message below.
+  let stale = false;
+  for (const [outputUrl, expected] of expectedOutputs) {
+    let current = "";
+    try {
+      current = readFileSync(outputUrl, "utf8");
+    } catch {
+      // A missing file is reported by the same stale-evidence message below.
+    }
+    if (normalizeLineEndings(current) !== expected) {
+      process.stderr.write(
+        `README evidence is stale. Run npm run evidence:render (${fileURLToPath(outputUrl)}).\n`,
+      );
+      stale = true;
+    }
   }
-  if (normalizeLineEndings(current) !== expected) {
-    process.stderr.write(
-      `README evidence is stale. Run npm run evidence:render (${fileURLToPath(outputUrl)}).\n`,
-    );
+  if (stale) {
     process.exitCode = 1;
   } else {
     process.stdout.write("README evidence matches executable and checked-in results.\n");
   }
 } else {
-  writeFileSync(outputUrl, expected, "utf8");
-  process.stdout.write(`Wrote ${fileURLToPath(outputUrl)}\n`);
+  for (const [outputUrl, expected] of expectedOutputs) {
+    writeFileSync(outputUrl, expected, "utf8");
+    process.stdout.write(`Wrote ${fileURLToPath(outputUrl)}\n`);
+  }
 }
