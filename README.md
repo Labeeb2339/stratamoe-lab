@@ -91,7 +91,7 @@ It detected all 30 known midpoint shifts after six tokens and produced zero
 stationary false triggers, but it **increased** first-64-token post-shift modeled
 link bytes by a median **11.52%**; the paired-bootstrap 95% interval was
 **[+10.78%, +12.64%]**. The traffic gate failed, so this JSD-gated retention
-intervention is not being carried into ShiftQ-MoE.
+intervention was not carried forward into later experiments.
 
 ## Shift actionability pilot
 
