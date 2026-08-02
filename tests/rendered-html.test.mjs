@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile, stat } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
 async function render() {
@@ -48,7 +48,7 @@ test("removes starter-only surfaces and ships project metadata", async () => {
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
-    stat(new URL("../public/og.png", import.meta.url)),
+    readFile(new URL("../public/og.png", import.meta.url)),
   ]);
 
   assert.match(layout, /StrataMoE Lab/);
@@ -58,7 +58,18 @@ test("removes starter-only surfaces and ships project metadata", async () => {
   assert.match(page, /ExperimentWorkbench/);
   assert.match(packageJson, /"name": "stratamoe-lab"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton|drizzle-orm|drizzle-kit/);
-  assert.ok(socialCard.size > 100_000, "social card should be a real raster asset");
+  assert.deepEqual(
+    [...socialCard.subarray(0, 8)],
+    [137, 80, 78, 71, 13, 10, 26, 10],
+    "social card should be a PNG asset",
+  );
+  assert.equal(socialCard.readUInt32BE(16), 1200, "social card should be 1200 px wide");
+  assert.equal(socialCard.readUInt32BE(20), 630, "social card should be 630 px high");
+  assert.doesNotMatch(
+    socialCard.toString("latin1"),
+    /c2pa|trainedAlgorithmicMedia|OpenAI/i,
+    "social card should not retain generative-media provenance",
+  );
 
   await assert.rejects(access(new URL("../app/_sites-preview", import.meta.url)));
   await assert.rejects(access(new URL("../db/schema.ts", import.meta.url)));

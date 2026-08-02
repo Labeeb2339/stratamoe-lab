@@ -35,9 +35,9 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [
         {
           url: socialImage,
-          width: 1672,
-          height: 941,
-          alt: "StrataMoE Lab — deterministic MoE memory hierarchy simulator",
+          width: 1200,
+          height: 630,
+          alt: "StrataMoE Lab interface showing the trace-driven cache research question and simulation boundary",
         },
       ],
     },
